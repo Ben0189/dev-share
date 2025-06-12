@@ -32,7 +32,7 @@ jobs:
         run: |
           cd dev-share-ui
           cp -r .next/static .next/standalone/.next/
-          cp -r public .next/standalone/
+          if [ -d "public" ]; then cp -r public .next/standalone/; fi
         
       - name: "Deploy to Azure Web App"
         id: deploy-to-webapp
