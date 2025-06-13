@@ -1,4 +1,4 @@
-name: Build and deploy Next.js app to Azure Web App
+name: Build and deploy .net app to Azure Web App
 
 on:
   push:
@@ -37,5 +37,5 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.WEBAPP_NAME }}
-          publish-profile: ${{ env.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          publish-profile: ${{ env.APPLICATION_PUBLISH_PROFILE }}
           package: ./publish
