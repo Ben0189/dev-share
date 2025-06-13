@@ -1,0 +1,41 @@
+name: Build and deploy Next.js app to Azure Web App
+
+on:
+  push:
+    branches:
+      - '**'  
+  workflow_dispatch:
+
+env:
+  WEBAPP_NAME: dev-share-api                  
+  DOTNET_VERSION: '9.0.6'                    
+  APPLICATION_PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore ./dev-share-api/dev-share-api.csproj
+
+      - name: Build
+        run: dotnet build ./dev-share-api/dev-share-api.csproj --configuration Release --no-restore
+
+      - name: Publish
+        run: dotnet publish ./dev-share-api/dev-share-api.csproj --configuration Release --output ./publish
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.WEBAPP_NAME }}
+          publish-profile: ${{ env.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./publish
