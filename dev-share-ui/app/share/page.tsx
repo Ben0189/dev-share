@@ -15,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { toast } from "sonner";
 
 export default function ShareResourcePage() {
   const [url, setUrl] = useState("");
@@ -54,7 +55,7 @@ export default function ShareResourcePage() {
     
     // Simulate API call
     
-    const res = await fetch('http://localhost:5066/api/share',{
+    const res = await fetch('https://localhost:7122/api/share',{
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -65,11 +66,13 @@ export default function ShareResourcePage() {
       }),
     })
     if(!res.ok){
-      throw new Error('Request failed');
+        toast.error("Uh oh! Something went wrong. Please try again later.");
+        throw new Error('Request failed');
     }
 
+
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    toast.success("Resource shared!");
     setIsSubmitting(false);
     router.push("/");
   };
