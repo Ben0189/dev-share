@@ -11,7 +11,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true); // overrides
+    .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables(); 
 
 // optional - if you don't want to have 'appsettings.local.json' for debugging purpose
 // Load secrets in development before building
@@ -31,9 +32,9 @@ builder.Services.AddSwaggerGen(c =>
 // cors
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowLocalhost3000", policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins("http://localhost:3000", "https://dev-share-ui-hce9cxaxacc8fahu.australiaeast-01.azurewebsites.net")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -100,7 +101,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors("AllowLocalhost3000");
+app.UseCors("AllowFrontend");
 app.MapControllers();
 
 await app.RunAsync();

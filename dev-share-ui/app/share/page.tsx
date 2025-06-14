@@ -54,7 +54,7 @@ export default function ShareResourcePage() {
     
     // Simulate API call
     
-    const res = await fetch('http://localhost:5066/api/share',{
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL_WITH_API}/share1`,{
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
