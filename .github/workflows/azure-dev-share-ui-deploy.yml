@@ -86,5 +86,5 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: dev-share-ui
-          publish-profile: ${{ secrets.APPLICATION_PUBLISH_PROFILE }}
+          publish-profile: ${{ secrets.APP_PUBLISH_PROFILE }}
           package: dev-share-ui/.next/standalone
