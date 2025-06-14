@@ -1,11 +1,27 @@
 name: CI/CD for Next.js
+name: CI/CD for Next.js
 
 on:
   pull_request:
     branches: ['main']
+  pull_request:
+    branches: ['main']
   push:
     branches: ['**']
+    branches: ['**']
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Select deployment environment'
+        required: true
+        default: 'Test'
+        type: choice
+        options:
+          - Test
+          - Preproduction
+
+env:
+  NODE_VERSION: "20.x"
     inputs:
       environment:
         description: 'Select deployment environment'
@@ -39,12 +55,38 @@ jobs:
 
   deploy:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+  ci-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install & Build (CI)
+        run: |
+          npm install
+          npm run build
+        working-directory: ./dev-share-ui
+
+  deploy:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     env:
       DEPLOY_ENV: ${{ github.event.inputs.environment || 'Test' }}
 
+    env:
+      DEPLOY_ENV: ${{ github.event.inputs.environment || 'Test' }}
+
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -62,10 +104,23 @@ jobs:
           cp ./dev-share-ui/$envFile ./dev-share-ui/.env
 
       - name: Install & Build
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Copy correct .env file
+        run: |
+          envFile=".env.test"
+          if [[ "${{ env.DEPLOY_ENV }}" == "Preproduction" ]]; then
+            envFile=".env.Preproduction"
+          fi
+          cp ./dev-share-ui/$envFile ./dev-share-ui/.env
+
+      - name: Install & Build
         run: |
           npm install
           npm run build
         working-directory: ./dev-share-ui
+
+      - name: Prepare static assets
 
       - name: Prepare static assets
         run: |
@@ -83,8 +138,19 @@ jobs:
 
       - name: Deploy to Azure Web App - Test
         if: env.DEPLOY_ENV == 'Test'
+
+      - name: Deploy to Azure Web App - Preproduction
+        if: env.DEPLOY_ENV == 'Preproduction'
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: preprod-share-ui
+          publish-profile: ${{ secrets.PREPROD_APP_PUBLISH_PROFILE }}
+          package: dev-share-ui/.next/standalone
+
+      - name: Deploy to Azure Web App - Test
+        if: env.DEPLOY_ENV == 'Test'
         uses: azure/webapps-deploy@v3
         with:
           app-name: dev-share-ui
-          publish-profile: ${{ secrets.APP_PUBLISH_PROFILE }}
+          publish-profile: ${{ secrets.APPLICATION_PUBLISH_PROFILE }}
           package: dev-share-ui/.next/standalone
