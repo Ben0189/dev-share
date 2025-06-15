@@ -16,6 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
+import Navbar from "@/components/Navbar";
 
 export default function ShareResourcePage() {
   const [url, setUrl] = useState("");
@@ -70,16 +71,15 @@ export default function ShareResourcePage() {
         throw new Error('Request failed');
     }
 
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
     toast.success("Resource shared!");
     setIsSubmitting(false);
     router.push("/");
   };
 
   return (
-    <main className="min-h-screen bg-background py-12">
-      <div className="container px-4 mx-auto max-w-2xl">
+    <main className="min-h-screen bg-background">
+        <Navbar />
+      <div className="container px-4 py-8 mx-auto max-w-2xl">
         <Card className="animate-in fade-in-50 slide-in-from-bottom-8 duration-300">
           <CardHeader>
             <CardTitle className="text-2xl">Share a Resource</CardTitle>
@@ -114,6 +114,13 @@ export default function ShareResourcePage() {
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   rows={3}
+                />
+              </div>
+            <div className="space-y-2">
+                <Label htmlFor="comment">Comment (Optional)</Label>
+                <Textarea
+                  id="comment"
+                  placeholder="Add your comment of the resource show us your take on this piece!"
                 />
               </div>
             </CardContent>
