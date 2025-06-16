@@ -34,31 +34,56 @@ public class ExtractController : ControllerBase
     [HttpPost("share")]
     public async Task<IActionResult> share([FromBody] UrlRequest request)
     {
- 
-        var url = request.Url;
-        Console.WriteLine($"Extracting: {url}");
+        try{
+            var url = request.Url;
 
-        // 尝试 HtmlAgilityPack 抓取
-        var result = TryHtmlAgilityPack(url);
+            //URL check
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return BadRequest("URL is required.");
+            }
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uriResult) ||
+            (uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps))
+            {
+                return BadRequest("URL must start with http:// or https:// and be a valid absolute URL.");
+            }
 
-        // 如果 HAP 解析失败（返回空），则使用 Playwright 模拟浏览器加载页面
-        if (string.IsNullOrWhiteSpace(result))
-        {
-            result = await TryPlaywright(url);
+            Console.WriteLine($"Extracting: {url}");
+
+            // 尝试 HtmlAgilityPack 抓取
+            var result = TryHtmlAgilityPack(url);
+
+            // 如果 HAP 解析失败（返回空），则使用 Playwright 模拟浏览器加载页面
+            if (string.IsNullOrWhiteSpace(result))
+            {
+                result = await TryPlaywright(url);
+            }
+
+            if (string.IsNullOrWhiteSpace(result))
+            {
+                return StatusCode(500, "Failed to extract article content.");
+            }
+
+            var prompt = new StringBuilder()
+                        .AppendLine("You will receive an input text and your task is to summarize the article in no more than 100 words.")
+                        .AppendLine("Only return the summary. Do not include any explanation.")
+                        .AppendLine("# Article content:")
+                        .AppendLine($"{result}")
+                        .ToString();
+            await _shareChainExecutor.ExecuteAsync(new ResourceShareContext
+            {
+                Url = url,
+                Prompt = prompt
+            });
+            return Ok(new {message = "Saved successfully"});
         }
-
-        var prompt = new StringBuilder()
-                    .AppendLine("You will receive an input text and your task is to summarize the article in no more than 100 words.")
-                    .AppendLine("Only return the summary. Do not include any explanation.")
-                    .AppendLine("# Article content:")
-                    .AppendLine($"{result}")
-                    .ToString();
-        await _shareChainExecutor.ExecuteAsync(new ResourceShareContext
-        {
-            Url = url,
-            Prompt = prompt
-        });
-        return Ok();
+        catch (Exception ex){
+            return StatusCode(500, new
+            {
+                message = "Failed to store URL.",
+                detail = ex.Message
+            });
+        }
     }
 
 
@@ -92,8 +117,22 @@ public class ExtractController : ControllerBase
     [HttpPost("search")]
     public async Task<ActionResult<float[]>> search([FromBody] SearchRequest request)
     {
-        var vectors = await _embeddingService.GetEmbeddingAsync(request.Text);
-        return Ok(await _vectorService.SearchEmbeddingAsync(vectors, topK: request.TopRelatives));
+        if (string.IsNullOrWhiteSpace(request.Text))
+        {
+            return BadRequest("Search text cannot be empty.");
+        }
+        if (request.TopRelatives <= 0 || request.TopRelatives > 100)
+        return BadRequest("TopRelatives must be between 1 and 100.");
+
+        try{
+            var vectors = await _embeddingService.GetEmbeddingAsync(request.Text);
+            var results = await _vectorService.SearchEmbeddingAsync(vectors, topK: request.TopRelatives,request.Text);
+            return Ok(results);
+        }
+        catch(Exception ex)
+        {
+            return StatusCode(500, "Search failed due to an internal error.");
+        }
     }
 
     [HttpPost("embedding/generate")]
