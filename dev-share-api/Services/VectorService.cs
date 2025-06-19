@@ -9,7 +9,7 @@ public class VectorService : IVectorService
 {
     private readonly QdrantClient _client;
     private readonly string _collection = "blotz-dev";
-    private readonly int _dimensions = 4;
+    private readonly ulong _dimensions = 384;
 
     public VectorService(QdrantClient qdrantClient)
     {
@@ -17,7 +17,30 @@ public class VectorService : IVectorService
     }
 
     // init if there is no collection in vector db
-    public async Task InitializeAsync() => await _client.CreateCollectionAsync(_collection, new VectorParams { Size = (ulong)_dimensions, Distance = Distance.Cosine });
+    public async Task InitializeAsync()
+    {
+        await _client.CreateCollectionAsync(
+            _collection,
+            vectorsConfig: new VectorParamsMap
+            {
+                Map =
+                {
+                    ["dense_vector"] = new VectorParams { Size = _dimensions, Distance = Distance.Cosine },
+                }
+            },
+            sparseVectorsConfig:
+            (
+                "sparse_vector",
+                new SparseVectorParams
+                {
+                    Index = new SparseIndexConfig
+                    {
+                        OnDisk = false,
+                    }
+                }
+            )
+            );
+    }
 
     public async Task<UpdateResult> IndexingAsync(string fieldName)
     {
@@ -38,7 +61,7 @@ public class VectorService : IVectorService
         );
     }
 
-    public async Task<UpdateResult> UpsertEmbeddingAsync(string url, string noteId, string content, float[] vector)
+    public async Task<UpdateResult> UpsertEmbeddingAsync(string url, string noteId, string content, Dictionary<string, Vector> vector)
     {
         // Convert string ID to ulong, or use incremental numeric IDs
         var point = new PointStruct
@@ -53,18 +76,42 @@ public class VectorService : IVectorService
         return await _client.UpsertAsync(_collection, new List<PointStruct> { point });
     }
 
-    public async Task<List<VectorSearchResultDto>> SearchEmbeddingAsync(float[] queryVector, int topK, string queryText)
+    public async Task<List<VectorSearchResultDto>> SearchEmbeddingAsync(float[] denseQueryVector, uint[] sparseIndices, float[] sparseValues, int topK)
     {
-        var filter = new Filter(
-                MatchText("content", queryText)
-            );
+        // var filter = new Filter(
+        //         MatchText("content", queryText)
+        //     );
 
-        var results = await _client.SearchAsync(
-            _collection,
-            queryVector,
-            filter,
-            limit: (ulong)topK,
-            scoreThreshold: 0.7f
+        if (sparseIndices.Length != sparseValues.Length)
+        {
+            throw new ArgumentException("sparse indices and sparse values must be same length");
+        }
+
+        var sparseTupleArray = sparseValues
+            .Select((val, i) => (val, sparseIndices[i]))
+            .ToArray();
+
+        var prefetch = new List<PrefetchQuery>
+        {
+            new()
+            {
+                Query = sparseTupleArray,
+                Using = "sparse_vector",
+                Limit = (ulong)topK
+            },
+            new()
+            {
+                Query = denseQueryVector,
+                Using = "dense_vector",
+                Limit = (ulong)topK
+            }
+        };
+
+        var results = await _client.QueryAsync(
+            collectionName: _collection,
+            prefetch: prefetch,
+            query: Fusion.Rrf,
+            limit: (ulong)topK
         );
 
         return results.Select(result =>
