@@ -31,10 +31,11 @@ public class ExtractController : ControllerBase
         _shareChainExecutor = shareChainExecutor;
     }
 
-    [HttpPost("share1")]
-    public async Task<IActionResult> share1([FromBody] UrlRequest request)
+    [HttpPost("share")]
+    public async Task<IActionResult> Share([FromBody] UrlRequest request)
     {
-        try{
+        try
+        {
             var url = request.Url;
 
             //URL check
@@ -75,9 +76,10 @@ public class ExtractController : ControllerBase
                 Url = url,
                 Prompt = prompt
             });
-            return Ok(new {message = "Saved successfully"});
+            return Ok(new { message = "Saved successfully" });
         }
-        catch (Exception ex){
+        catch (Exception ex)
+        {
             return StatusCode(500, new
             {
                 message = "Failed to store URL.",
@@ -86,59 +88,56 @@ public class ExtractController : ControllerBase
         }
     }
 
-
-    [HttpPost("extract")]
-    public async Task<IActionResult> Post([FromBody] UrlRequest request)
-    {
-
-        var url = request.Url;
-        Console.WriteLine($"Extracting: {url}");
-
-        // 尝试 HtmlAgilityPack 抓取
-        var result = TryHtmlAgilityPack(url);
-
-        // 如果 HAP 解析失败（返回空），则使用 Playwright 模拟浏览器加载页面
-        if (string.IsNullOrWhiteSpace(result))
-        {
-            result = await TryPlaywright(url);
-        }
-
-        var prompt = new StringBuilder()
-                    .AppendLine("You will receive an input text and your task is to summarize the article in no more than 100 words.")
-                    .AppendLine("Only return the summary. Do not include any explanation.")
-                    .AppendLine("# Article content:")
-                    .AppendLine($"{result}")
-                    .ToString();
-
-        var summarizedRes = await _summaryService.SummarizeAsync(prompt);
-        return Ok(new { url, content = summarizedRes });
-    }
-    
     [HttpPost("search")]
-    public async Task<ActionResult<float[]>> search([FromBody] SearchRequest request)
+    public async Task<ActionResult<float[]>> Search([FromBody] SearchRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Text))
         {
             return BadRequest("Search text cannot be empty.");
         }
         if (request.TopRelatives <= 0 || request.TopRelatives > 100)
-        return BadRequest("TopRelatives must be between 1 and 100.");
+            return BadRequest("TopRelatives must be between 1 and 100.");
 
-        try{
-            var vectors = await _embeddingService.GetEmbeddingAsync(request.Text);
-            var results = await _vectorService.SearchEmbeddingAsync(vectors, topK: request.TopRelatives,request.Text);
+        try
+        {
+            var denseEmbedding = await _embeddingService.GetDenseEmbeddingAsync(request.Text);
+            var (indices, values) = await _embeddingService.GetSparseEmbeddingAsync(request.Text);
+            var results = await _vectorService.SearchEmbeddingAsync(denseQueryVector: denseEmbedding, sparseIndices: indices, sparseValues: values, topK: request.TopRelatives);
             return Ok(results);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             return StatusCode(500, "Search failed due to an internal error.");
         }
     }
 
-    [HttpPost("embedding/generate")]
-    public async Task<ActionResult<float[]>> GenerateEmbedding([FromBody] GenerateEmbeddingRequest request)
+    [HttpPost("vector/init")]
+    public async Task<ActionResult<float[]>> InitVectorDB()
     {
-        return Ok(await _embeddingService.GetEmbeddingAsync(request.Text));
+        await _vectorService.InitializeAsync();
+        return Ok();
+    }
+
+    [HttpPost("embedding/generate")]
+    public async Task<ActionResult> GenerateEmbedding([FromBody] GenerateEmbeddingRequest request)
+    {
+        var denseEmbedding = await _embeddingService.GetDenseEmbeddingAsync(request.Text);
+        var sparseEmbedding = await _embeddingService.GetSparseEmbeddingAsync(request.Text);
+
+        var denseVector = new DenseVector();
+        denseVector.Data.AddRange(denseEmbedding);
+
+        var sparseVector = new SparseVector();
+        sparseVector.Indices.AddRange(sparseEmbedding.indices); // Item2 = indices
+        sparseVector.Values.AddRange(sparseEmbedding.values);  // Item1 = values
+
+        var vectors = new Dictionary<string, Vector>
+        {
+            ["dense_vector"] = new() { Dense = denseVector },
+            ["sparse_vector"] = new() { Sparse = sparseVector }
+        };
+
+        return Ok(vectors);
     }
 
     [HttpPut("embedding/put")]
@@ -147,11 +146,11 @@ public class ExtractController : ControllerBase
         return Ok(await _vectorService.UpsertEmbeddingAsync(request.Url, request.NoteId, request.Text, request.Vectors));
     }
 
-    [HttpPut("embedding/search")]
-    public async Task<ActionResult<List<VectorSearchResultDto>>> SearchEmbedding([FromBody] SearchEmbeddingRequest request)
-    {
-        return Ok(await _vectorService.SearchEmbeddingAsync(request.QueryEmbedding, topK: request.TopRelatives, request.queryText));
-    }
+    // [HttpPut("embedding/put")]
+    // public async Task<ActionResult<UpdateResult>> InsertEmbedding([FromBody] InsertEmbeddingRequest request)
+    // {
+    //     return Ok(await _vectorService.UpsertEmbeddingAsync(request.Url, request.NoteId, request.Text, request.Vectors));
+    // }
 
     [HttpPost("embedding/indexing")]
     public async Task<ActionResult<UpdateResult>> Indexing([FromBody] string field)
