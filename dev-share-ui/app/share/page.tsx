@@ -71,7 +71,7 @@ export default function ShareResourcePage() {
         throw new Error('Request failed');
     }
 
-    toast.success("Resource shared!");
+    toast.success("Resource shared!", {duration: 2500});
     setIsSubmitting(false);
     router.push("/");
   };
@@ -116,13 +116,6 @@ export default function ShareResourcePage() {
                   rows={3}
                 />
               </div>
-            <div className="space-y-2">
-                <Label htmlFor="comment">Comment (Optional)</Label>
-                <Textarea
-                  id="comment"
-                  placeholder="Add your comment of the resource show us your take on this piece!"
-                />
-              </div>
             </CardContent>
             <CardFooter className="flex justify-between">
               <Button 
@@ -139,7 +132,7 @@ export default function ShareResourcePage() {
                 {isSubmitting ? (
                   <>
                     <div className="h-4 w-4 mr-2 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                    Processing...
+                    Submitting...
                   </>
                 ) : (
                   "Share Resource"

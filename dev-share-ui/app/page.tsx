@@ -53,23 +53,7 @@ export default function Home() {
     setSearchQuery(query);
     
     const result = await searchResources(query);
-    
-    // TODO: Integrate with Azure OpenAI for embeddings and search
-    // Integration point for Azure OpenAI API:
-    // 1. Create embeddings for the search query
-    // 2. Search for similar embeddings in your vector database
-    // 3. Return the most relevant resources
-    // Example:
-    // const embeddings = await createEmbeddings(query);
-    // const results = await searchSimilarResources(embeddings);
-    // setResources(results);
-    
-    const filtered = mockResources.filter(resource => 
-      resource.title.toLowerCase().includes(query.toLowerCase()) || 
-      resource.description.toLowerCase().includes(query.toLowerCase()) ||
-      resource.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
-    );
-    
+
     setResources(result);
     setIsSearching(false);
   };
