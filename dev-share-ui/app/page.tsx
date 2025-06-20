@@ -18,7 +18,7 @@ export default function Home() {
   const topRelative = 6;
 
   const searchResources = async(query: string) : Promise<Resource[]>=> {
-    const result = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL_WITH_API}/search`,{
+    const result = await fetch('https://localhost:7122/api/search',{
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
