@@ -31,28 +31,6 @@ public class ExtractController : ControllerBase
         _shareChainExecutor = shareChainExecutor;
     }
 
-    [HttpPost("share1")]
-    public async Task<IActionResult> share1([FromBody] UrlRequest request)
-    {
- 
-        var url = request.Url;
-        Console.WriteLine($"Extracting: {url}");
-
-
-        var prompt = new StringBuilder()
-                    .AppendLine("You will receive an input text and your task is to summarize the article in no more than 100 words.")
-                    .AppendLine("Only return the summary. Do not include any explanation.")
-                    .AppendLine("# Article content:")
-                    .AppendLine("Only return the summary. Do not include any explanation.")
-                    .ToString();
-        await _shareChainExecutor.ExecuteAsync(new ResourceShareContext
-        {
-            Url = url,
-            Prompt = prompt
-        });
-        return Ok();
-    }
-
     [HttpPost("share")]
     public async Task<IActionResult> Share([FromBody] UrlRequest request)
     {
