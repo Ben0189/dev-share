@@ -14,7 +14,7 @@ public class VectorShareChainHandle : BaseShareChainHandle
 
     protected override void Validate(ResourceShareContext context)
     {
-        if (context.Vectors == null || context.Vectors.Length == 0)
+        if (context.Vectors == null || context.Vectors.Count == 0)
         {
             throw new ArgumentNullException(nameof(context.Vectors), "Vectors cannot be null or empty.");
         }
