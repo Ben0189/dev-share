@@ -63,6 +63,10 @@ builder.Services.AddSingleton<AzureOpenAIClient>(_ =>
     return new AzureOpenAIClient(new Uri(endpoint), new ApiKeyCredential(apiKey));
 });
 
+builder.Services.AddHttpClient("FastEmbed", client =>
+{
+    client.BaseAddress = new Uri("http://localhost:8000");
+});
 
 // Application services
 builder.Services.AddScoped<IVectorService>(sp =>
@@ -74,7 +78,8 @@ builder.Services.AddScoped<IVectorService>(sp =>
 builder.Services.AddScoped<IEmbeddingService>(sp =>
 {
     var openAiClient = sp.GetRequiredService<AzureOpenAIClient>();
-    return new EmbeddingService(openAiClient);
+    var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+    return new EmbeddingService(openAiClient, httpClientFactory);
 });
 
 builder.Services.AddScoped<ISummaryService>(sp =>

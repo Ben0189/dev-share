@@ -1,4 +1,5 @@
 using Models;
+using Qdrant.Client.Grpc;
 
 namespace Services;
 
@@ -11,7 +12,7 @@ public class EmbeddingShareChainHandle : BaseShareChainHandle
     {
         _embeddingService = embeddingService;
     }
-    
+
     protected override void Validate(ResourceShareContext context)
     {
         if (string.IsNullOrWhiteSpace(context.Summary))
@@ -22,7 +23,22 @@ public class EmbeddingShareChainHandle : BaseShareChainHandle
 
     protected async override Task<HandlerResult> ProcessAsync(ResourceShareContext context)
     {
-        var vectors = await _embeddingService.GetEmbeddingAsync(context.Summary);
+        var denseEmbedding = await _embeddingService.GetDenseEmbeddingAsync(context.Summary);
+        var (indices, values) = await _embeddingService.GetSparseEmbeddingAsync(context.Summary);
+
+        var denseVector = new DenseVector();
+        denseVector.Data.AddRange(denseEmbedding);
+
+        var sparseVector = new SparseVector();
+        sparseVector.Indices.AddRange(indices);
+        sparseVector.Values.AddRange(values);
+
+        var vectors = new Dictionary<string, Vector>
+        {
+            ["dense_vector"] = new() { Dense = denseVector },
+            ["sparse_vector"] = new() { Sparse = sparseVector }
+        };
+
         context.Vectors = vectors;
         return HandlerResult.Success();
     }
