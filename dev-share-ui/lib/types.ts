@@ -11,3 +11,8 @@ export interface Resource {
   isBookmarked: boolean;
   recommended: boolean;
 }
+
+export interface VectorSearchResultDTO {
+  url: string;
+  content: string;
+}

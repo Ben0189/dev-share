@@ -15,6 +15,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { toast } from "sonner";
+import Navbar from "@/components/Navbar";
 
 export default function ShareResourcePage() {
   const [url, setUrl] = useState("");
@@ -54,7 +56,7 @@ export default function ShareResourcePage() {
     
     // Simulate API call
     
-    const res = await fetch('http://localhost:5066/api/share',{
+    const res = await fetch('https://localhost:7122/api/share',{
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -65,18 +67,19 @@ export default function ShareResourcePage() {
       }),
     })
     if(!res.ok){
-      throw new Error('Request failed');
+        toast.error("Uh oh! Something went wrong. Please try again later.");
+        throw new Error('Request failed');
     }
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    toast.success("Resource shared!", {duration: 2500});
     setIsSubmitting(false);
     router.push("/");
   };
 
   return (
-    <main className="min-h-screen bg-background py-12">
-      <div className="container px-4 mx-auto max-w-2xl">
+    <main className="min-h-screen bg-background">
+        <Navbar />
+      <div className="container px-4 py-8 mx-auto max-w-2xl">
         <Card className="animate-in fade-in-50 slide-in-from-bottom-8 duration-300">
           <CardHeader>
             <CardTitle className="text-2xl">Share a Resource</CardTitle>
@@ -129,7 +132,7 @@ export default function ShareResourcePage() {
                 {isSubmitting ? (
                   <>
                     <div className="h-4 w-4 mr-2 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                    Processing...
+                    Submitting...
                   </>
                 ) : (
                   "Share Resource"
