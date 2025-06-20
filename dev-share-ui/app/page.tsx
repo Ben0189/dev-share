@@ -9,35 +9,52 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { mockResources } from "@/lib/data";
+import { Resource, VectorSearchResultDTO } from "@/lib/types";
 
 export default function Home() {
   const [resources, setResources] = useState(mockResources);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const topRelative = 6;
+
+  const searchResources = async(query: string) : Promise<Resource[]>=> {
+    const result = await fetch('https://localhost:7122/api/search',{
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: query,
+        topRelatives: topRelative
+      }),
+    })
+
+    if (!result.ok) throw new Error(`Search failed (${result.status})`);
+
+    const dtos: VectorSearchResultDTO[] = await result.json();
+
+    return dtos.map(dto => ({
+        id: crypto.randomUUID(),            // or hash(dto.url)
+        title: dto.content.slice(0, 80),    // quick placeholder
+        description: dto.content,
+        url: dto.url,
+        imageUrl: "",                       // TODO: fetch or derive
+        tags: [],
+        likes: 0,
+        date: new Date().toISOString(),
+        isLiked: false,
+        isBookmarked: false,
+        recommended: false
+    }));
+  };
 
   const handleSearch = async (query: string) => {
     setIsSearching(true);
     setSearchQuery(query);
     
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    // TODO: Integrate with Azure OpenAI for embeddings and search
-    // Integration point for Azure OpenAI API:
-    // 1. Create embeddings for the search query
-    // 2. Search for similar embeddings in your vector database
-    // 3. Return the most relevant resources
-    // Example:
-    // const embeddings = await createEmbeddings(query);
-    // const results = await searchSimilarResources(embeddings);
-    // setResources(results);
-    
-    const filtered = mockResources.filter(resource => 
-      resource.title.toLowerCase().includes(query.toLowerCase()) || 
-      resource.description.toLowerCase().includes(query.toLowerCase()) ||
-      resource.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
-    );
-    
-    setResources(filtered.length > 0 ? filtered : []);
+    const result = await searchResources(query);
+
+    setResources(result);
     setIsSearching(false);
   };
 
