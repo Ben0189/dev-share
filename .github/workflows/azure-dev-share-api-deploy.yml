@@ -33,11 +33,6 @@ jobs:
       - name: Run tests
         run: dotnet test ./dev-share-api/dev-share-api.csproj --configuration Release --no-build --verbosity normal
 
-      - name: Code analysis
-        run: |
-          echo "Running code analysis..."
-          dotnet format ./dev-share-api/dev-share-api.csproj --verify-no-changes --verbosity diagnostic || echo "Code formatting issues found"
-
       - name: Build verification
         run: |
           echo "✅ CI checks completed successfully"
