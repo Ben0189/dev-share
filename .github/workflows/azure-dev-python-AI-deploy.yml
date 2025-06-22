@@ -36,5 +36,5 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: python-AI-model   
-          publish-profile: ${{ secrets.AZURE_FASTAPI_PUBLISH_PROFILE }} 
+          publish-profile: ${{ secrets.AZURE_PYTHON_MODEL_PUBLISH_PROFILE }} 
           package: python-embedding.zip
