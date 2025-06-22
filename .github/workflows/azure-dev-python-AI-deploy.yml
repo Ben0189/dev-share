@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r python-embedding/requirements.txt
+          pip install fastembed fastapi uvicorn pydantic
 
       - name: Zip application for deployment
         run: |
