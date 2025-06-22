@@ -29,7 +29,7 @@ jobs:
 
       - name: Zip application for deployment
         run: |
-          zip -r python-embedding.zip python-embedding/*
+          zip -j python-embedding.zip python-embedding/*
 
       - name: Deploy to Azure Web App (Linux)
         uses: azure/webapps-deploy@v3
