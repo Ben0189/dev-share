@@ -28,8 +28,8 @@ jobs:
           pip install fastembed fastapi uvicorn pydantic
 
       - name: Zip application for deployment
-      run: |
-        zip -r python-embedding.zip python-embedding/*
+        run: |
+          zip -r python-embedding.zip python-embedding/*
 
       - name: Deploy to Azure Web App (Linux)
         uses: azure/webapps-deploy@v3
