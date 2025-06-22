@@ -66,7 +66,7 @@ builder.Services.AddSingleton<AzureOpenAIClient>(_ =>
 
 builder.Services.AddHttpClient("FastEmbed", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:8000");
+    client.BaseAddress = new Uri("python-ai-model-acgfbgfbffb0fyav.australiaeast-01.azurewebsites.net");
 });
 
 // Application services

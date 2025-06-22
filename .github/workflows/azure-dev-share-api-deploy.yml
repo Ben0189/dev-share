@@ -5,16 +5,6 @@ on:
     branches: ['main']
   push:
     branches: ['**']
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Select deployment environment'
-        required: true
-        default: 'Test'
-        type: choice
-        options:
-          - Test
-          - Preproduction
 
 env:
   DOTNET_VERSION: '9.0.x'
@@ -38,11 +28,8 @@ jobs:
         run: dotnet build ./dev-share-api/dev-share-api.csproj --configuration Release --no-restore
 
   deploy:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push'
     runs-on: windows-latest
-
-    env:
-      DEPLOY_ENV: ${{ github.event.inputs.environment || 'Test' }}
 
     steps:
       - name: Checkout code
@@ -61,22 +48,12 @@ jobs:
 
       - name: Publish
         run: |
-          $envName = "${{ env.DEPLOY_ENV }}"
           dotnet publish ./dev-share-api/dev-share-api.csproj `
             --configuration Release `
             --output ./publish `
-            -p:EnvironmentName=$envName
-
-      - name: Deploy to Azure Web App - Preproduction
-        if: env.DEPLOY_ENV == 'Preproduction'
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: preprod-share-api
-          publish-profile: ${{ secrets.PREPROD_AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ./publish
+            -p:EnvironmentName=Test
 
       - name: Deploy to Azure Web App - Test
-        if: env.DEPLOY_ENV == 'Test'
         uses: azure/webapps-deploy@v3
         with:
           app-name: dev-share-api

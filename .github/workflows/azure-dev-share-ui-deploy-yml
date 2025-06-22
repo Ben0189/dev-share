@@ -1,38 +1,63 @@
-name: Build and deploy Next.js app to Azure Web App
+name: CI/CD for Next.js
 
 on:
+  pull_request:
+    branches: ['main']
   push:
-    branches:
-      - main  
-  workflow_dispatch:
+    branches: ['**']
 
 env:
-  APPLICATION_PUBLISH_PROFILE: ${{ secrets.APP_PUBLISH_PROFILE }}
-  WEBAPP_NAME: "dev-share-ui"
+  NODE_VERSION: "20.x"
 
 jobs:
-  build:
+  ci-check:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js version
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
+          node-version: ${{ env.NODE_VERSION }}
 
-      - name: npm install, build, and test
+      - name: Install & Build (CI)
         run: |
           npm install
           npm run build
         working-directory: ./dev-share-ui
 
-      - name: "Deploy to Azure Web App"
-        id: deploy-to-webapp
+  deploy:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Copy .env.test to .env
+        run: cp ./dev-share-ui/.env.test ./dev-share-ui/.env
+
+      - name: Install & Build
+        run: |
+          npm install
+          npm run build
+        working-directory: ./dev-share-ui
+
+      - name: Prepare static assets
+        run: |
+          cd dev-share-ui
+          cp -r .next/static .next/standalone/.next/
+          if [ -d "public" ]; then cp -r public .next/standalone/; fi
+
+      - name: Deploy to Azure Web App - Test
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ env.WEBAPP_NAME }}
-          slot-name: "Production"
-          publish-profile: ${{ env.APPLICATION_PUBLISH_PROFILE }}
-          package:  dev-share-ui/.next/standalone
+          app-name: dev-share-ui
+          publish-profile: ${{ secrets.APP_PUBLISH_PROFILE }}
+          package: dev-share-ui/.next/standalone
