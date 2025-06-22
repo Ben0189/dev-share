@@ -62,6 +62,8 @@ public class ExtractController : ControllerBase
                 Status = "pending"
             };
             TaskStore[taskId] = task;
+            Console.WriteLine($"[POST] Saving task: {taskId}");
+            Console.WriteLine($"[POST] TaskStore count: {TaskStore.Count}");
 
         _ = Task.Run(async () =>
             {
@@ -102,6 +104,8 @@ public class ExtractController : ControllerBase
     [HttpGet("share/status/{taskId}")]
     public IActionResult GetStatus(string taskId)
     {
+        Console.WriteLine($"[GET] Checking task: {taskId}");
+        Console.WriteLine($"[GET] TaskStore count: {TaskStore.Count}");
         if (!TaskStore.TryGetValue(taskId, out var task))
             return NotFound(new { message = "Task not found" });
 
