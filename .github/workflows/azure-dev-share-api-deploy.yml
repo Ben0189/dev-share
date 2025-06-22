@@ -57,7 +57,6 @@ jobs:
           dotnet restore ./dev-share-api/dev-share-api.csproj
           dotnet build ./dev-share-api/dev-share-api.csproj --configuration Release --no-restore
           dotnet test ./dev-share-api/dev-share-api.csproj --configuration Release --no-build --verbosity normal
-          dotnet format ./dev-share-api/dev-share-api.csproj --verify-no-changes --verbosity diagnostic || echo "Code formatting issues found"
 
       - name: Publish
         run: |
