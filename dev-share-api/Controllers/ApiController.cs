@@ -1,3 +1,5 @@
+using System;
+using System.Threading.Tasks;
 using HtmlAgilityPack;
 using Microsoft.Playwright;
 using Models;
@@ -7,6 +9,8 @@ using Services;
 using Qdrant.Client.Grpc;
 using System.Text;
 using Executor;
+using System.Collections.Concurrent;
+
 
 namespace UrlExtractorApi.Controllers;
 
@@ -18,6 +22,7 @@ public class ExtractController : ControllerBase
     private readonly IEmbeddingService _embeddingService;
     private readonly IVectorService _vectorService;
     private readonly ShareChainExecutor _shareChainExecutor;
+    private static readonly ConcurrentDictionary<string, ShareTask> TaskStore = new();
 
     public ExtractController(
         ISummaryService summaryService,
@@ -34,8 +39,6 @@ public class ExtractController : ControllerBase
     [HttpPost("share")]
     public async Task<IActionResult> Share([FromBody] UrlRequest request)
     {
-        try
-        {
             var url = request.Url;
 
             //URL check
@@ -51,41 +54,67 @@ public class ExtractController : ControllerBase
 
             Console.WriteLine($"Extracting: {url}");
 
-            // 尝试 HtmlAgilityPack 抓取
-            var result = TryHtmlAgilityPack(url);
-
-            // 如果 HAP 解析失败（返回空），则使用 Playwright 模拟浏览器加载页面
-            if (string.IsNullOrWhiteSpace(result))
+            var taskId = Guid.NewGuid().ToString();
+            var task = new ShareTask
             {
-                result = await TryPlaywright(url);
-            }
-
-            if (string.IsNullOrWhiteSpace(result))
-            {
-                return StatusCode(500, "Failed to extract article content.");
-            }
-
-            var prompt = new StringBuilder()
-                        .AppendLine("You will receive an input text and your task is to summarize the article in no more than 100 words.")
-                        .AppendLine("Only return the summary. Do not include any explanation.")
-                        .AppendLine("# Article content:")
-                        .AppendLine($"{result}")
-                        .ToString();
-            await _shareChainExecutor.ExecuteAsync(new ResourceShareContext
-            {
+                TaskId = taskId,
                 Url = url,
-                Prompt = prompt
-            });
-            return Ok(new { message = "Saved successfully" });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new
+                Status = "pending"
+            };
+            TaskStore[taskId] = task;
+            Console.WriteLine($"[POST] Saving task: {taskId}");
+            Console.WriteLine($"[POST] TaskStore count: {TaskStore.Count}");
+
+        _ = Task.Run(async () =>
             {
-                message = "Failed to store URL.",
-                detail = ex.Message
+                try
+                {
+                Console.WriteLine($"Extracting: {url}");
+                var result = TryHtmlAgilityPack(url);
+                if (string.IsNullOrWhiteSpace(result))
+                    result = await TryPlaywright(url);
+                if (string.IsNullOrWhiteSpace(result))
+                    throw new Exception("Content extraction failed.");
+
+                var prompt = new StringBuilder()
+                    .AppendLine("You will receive an input text and your task is to summarize the article in no more than 100 words.")
+                    .AppendLine("Only return the summary. Do not include any explanation.")
+                    .AppendLine("# Article content:")
+                    .AppendLine($"{result}")
+                    .ToString();
+
+                await _shareChainExecutor.ExecuteAsync(new ResourceShareContext
+                {
+                    Url = url,
+                    Prompt = prompt
+                });
+
+                task.Status = "success";
+                task.Message = "Processed successfully";
+                }
+                catch (Exception ex)
+                {
+                    task.Status = "failed";
+                    task.Message = ex.Message;
+                }
             });
-        }
+        return Ok(new { taskId });
+    }
+
+    [HttpGet("share/status/{taskId}")]
+    public IActionResult GetStatus(string taskId)
+    {
+        Console.WriteLine($"[GET] Checking task: {taskId}");
+        Console.WriteLine($"[GET] TaskStore count: {TaskStore.Count}");
+        if (!TaskStore.TryGetValue(taskId, out var task))
+            return NotFound(new { message = "Task not found" });
+
+        return Ok(new
+        {
+            taskId = task.TaskId,
+            status = task.Status,
+            message = task.Message
+        });
     }
 
     [HttpPost("search")]
