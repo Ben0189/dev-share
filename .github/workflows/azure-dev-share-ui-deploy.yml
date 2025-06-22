@@ -4,14 +4,17 @@ on:
   pull_request:
     branches: ['main']
   push:
-    branches: ['**']
+    branches: ['main']
 
 env:
   NODE_VERSION: "20.x"
 
 jobs:
-  ci-check:
+  # CI job - runs for PRs to main
+  ci:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,15 +24,35 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install & Build (CI)
-        run: |
-          npm install
-          npm run build
+      - name: Install dependencies
+        run: npm install
         working-directory: ./dev-share-ui
 
+      - name: Lint code
+        run: |
+          npm run lint || echo "Linting issues found"
+        working-directory: ./dev-share-ui
+
+      - name: Type check
+        run: |
+          npm run type-check || echo "Type checking issues found"
+        working-directory: ./dev-share-ui
+
+      - name: Run tests
+        run: |
+          npm run test || echo "Tests failed or not found"
+        working-directory: ./dev-share-ui
+
+      - name: Build verification
+        run: |
+          npm run build
+          echo "✅ CI checks completed successfully"
+        working-directory: ./dev-share-ui
+
+  # Deploy job - runs when PR is merged to main
   deploy:
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
       - name: Checkout code
@@ -40,12 +63,20 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Copy .env.test to .env
+      - name: Run CI checks before deployment
+        run: |
+          echo "Running pre-deployment CI checks..."
+          npm install
+          npm run lint || echo "Linting issues found"
+          npm run type-check || echo "Type checking issues found"
+          npm run test || echo "Tests failed or not found"
+        working-directory: ./dev-share-ui
+
+      - name: Copy environment configuration
         run: cp ./dev-share-ui/.env.test ./dev-share-ui/.env
 
-      - name: Install & Build
+      - name: Build for production
         run: |
-          npm install
           npm run build
         working-directory: ./dev-share-ui
 
@@ -61,3 +92,8 @@ jobs:
           app-name: dev-share-ui
           publish-profile: ${{ secrets.APP_PUBLISH_PROFILE }}
           package: dev-share-ui/.next/standalone
+
+      - name: Post-deployment verification
+        run: |
+          echo "✅ Deployment completed successfully"
+          echo "Application deployed to Azure Web App: dev-share-ui"

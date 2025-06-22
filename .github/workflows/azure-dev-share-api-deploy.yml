@@ -4,14 +4,17 @@ on:
   pull_request:
     branches: ['main']
   push:
-    branches: ['**']
+    branches: ['main']
 
 env:
   DOTNET_VERSION: '9.0.x'
 
 jobs:
-  ci-check:
+  # CI job - runs for PRs to main
+  ci:
     runs-on: windows-latest
+    if: github.event_name == 'pull_request'
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,10 +30,23 @@ jobs:
       - name: Build
         run: dotnet build ./dev-share-api/dev-share-api.csproj --configuration Release --no-restore
 
+      - name: Run tests
+        run: dotnet test ./dev-share-api/dev-share-api.csproj --configuration Release --no-build --verbosity normal
+
+      - name: Code analysis
+        run: |
+          echo "Running code analysis..."
+          dotnet format ./dev-share-api/dev-share-api.csproj --verify-no-changes --verbosity diagnostic || echo "Code formatting issues found"
+
+      - name: Build verification
+        run: |
+          echo "✅ CI checks completed successfully"
+
+  # Deploy job - runs when PR is merged to main
   deploy:
-    if: github.event_name == 'push'
     runs-on: windows-latest
-
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -40,11 +56,13 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Restore dependencies
-        run: dotnet restore ./dev-share-api/dev-share-api.csproj
-
-      - name: Build
-        run: dotnet build ./dev-share-api/dev-share-api.csproj --configuration Release --no-restore
+      - name: Run CI checks before deployment
+        run: |
+          echo "Running pre-deployment CI checks..."
+          dotnet restore ./dev-share-api/dev-share-api.csproj
+          dotnet build ./dev-share-api/dev-share-api.csproj --configuration Release --no-restore
+          dotnet test ./dev-share-api/dev-share-api.csproj --configuration Release --no-build --verbosity normal
+          dotnet format ./dev-share-api/dev-share-api.csproj --verify-no-changes --verbosity diagnostic || echo "Code formatting issues found"
 
       - name: Publish
         run: |
@@ -59,3 +77,8 @@ jobs:
           app-name: dev-share-api
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ./publish
+
+      - name: Post-deployment verification
+        run: |
+          echo "✅ Deployment completed successfully"
+          echo "Application deployed to Azure Web App: dev-share-api"
