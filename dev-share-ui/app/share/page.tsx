@@ -55,12 +55,11 @@ export default function ShareResourcePage() {
     // const resource = await processResourceWithAI({ url, prompt });
     
     // Simulate API call
-
     //set the max processing time
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 6000);
     try{
-      const res = await fetch('http://localhost:5066/api/share',{
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL_WITH_API}/share`,{
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

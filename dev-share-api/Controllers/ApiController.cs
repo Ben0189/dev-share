@@ -245,5 +245,3 @@ public class ExtractController : ControllerBase
         return string.Join("\n", text);
     }
 }
-
-

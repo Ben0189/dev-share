@@ -1,0 +1,7 @@
+fastembed
+fastapi
+uvicorn[standard]
+pydantic
+pytest
+flake8
+black

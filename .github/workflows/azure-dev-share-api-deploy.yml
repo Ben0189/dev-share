@@ -1,0 +1,78 @@
+name: CI/CD for .NET
+
+on:
+  pull_request:
+    branches: ['main']
+  push:
+    branches: ['main']
+
+env:
+  DOTNET_VERSION: '9.0.x'
+
+jobs:
+  # CI job - runs for PRs to main
+  ci:
+    runs-on: windows-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore ./dev-share-api/dev-share-api.csproj
+
+      - name: Build
+        run: dotnet build ./dev-share-api/dev-share-api.csproj --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test ./dev-share-api/dev-share-api.csproj --configuration Release --no-build --verbosity normal
+
+      - name: Build verification
+        run: |
+          echo "✅ CI checks completed successfully"
+
+  # Deploy job - runs when PR is merged to main
+  deploy:
+    runs-on: windows-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Run CI checks before deployment
+        run: |
+          echo "Running pre-deployment CI checks..."
+          dotnet restore ./dev-share-api/dev-share-api.csproj
+          dotnet build ./dev-share-api/dev-share-api.csproj --configuration Release --no-restore
+          dotnet test ./dev-share-api/dev-share-api.csproj --configuration Release --no-build --verbosity normal
+
+      - name: Publish
+        run: |
+          dotnet publish ./dev-share-api/dev-share-api.csproj `
+            --configuration Release `
+            --output ./publish `
+            -p:EnvironmentName=Test
+
+      - name: Deploy to Azure Web App - Test
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: dev-share-api
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./publish
+
+      - name: Post-deployment verification
+        run: |
+          echo "✅ Deployment completed successfully"
+          echo "Application deployed to Azure Web App: dev-share-api"
