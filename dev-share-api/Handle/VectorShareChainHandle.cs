@@ -22,7 +22,7 @@ public class VectorShareChainHandle : BaseShareChainHandle
 
     protected async override Task<HandlerResult> ProcessAsync(ResourceShareContext context)
     {
-        await _vectorService.UpsertEmbeddingAsync(context.Url, IdGenerator.GetNextId().ToString(), context.Summary, context.Vectors);
+        await _vectorService.UpsertEmbeddingAsync(context.Url, IdGeneratorUtils.GetNextId().ToString(), context.Summary, context.Vectors);
         return HandlerResult.Success();
     }
     
