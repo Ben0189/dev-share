@@ -90,7 +90,7 @@ export default function ShareResourcePage() {
         pollCount++;
       
         try {
-          const statusRes = await fetch('http://localhost:5066/api/share/status/${taskId}');
+          const statusRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL_WITH_API}/share/status/${taskId}`);
           const statusData = await statusRes.json();
       
           if (statusData.status === "success") {
