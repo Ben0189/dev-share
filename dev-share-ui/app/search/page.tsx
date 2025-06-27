@@ -93,62 +93,17 @@ export default function SearchPage() {
       <HeroSection onSearch={handleSearch} isSearching={isSearching} />
       
       <div className="container px-4 py-8 mx-auto max-w-7xl">
-        {/* Share Resource Button */}
-        <div className="mb-8 flex justify-center">
-          <Button 
-            asChild
-            className="group relative overflow-hidden transition-all duration-300"
-            size="lg"
-          >
-            <Link href="/share">
-              <span className="flex items-center gap-2">
-                <Plus className="h-4 w-4 transition-transform group-hover:rotate-90 duration-300" />
-                Share a Resource
-              </span>
-            </Link>
-          </Button>
+        <div className="flex items-center justify-between mb-8">
+          <span className="text-lg font-medium text-muted-foreground">{resources.length} resources found</span>
+          <a href="#" className="text-primary hover:underline flex items-center gap-1 text-sm font-medium">View All <span aria-hidden="true">→</span></a>
         </div>
-
-        <Tabs defaultValue="trending" className="w-full">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
-            <h2 className="text-2xl font-semibold tracking-tight">Discover Resources</h2>
-            <TabsList className="h-10">
-              <TabsTrigger value="trending" className="px-4">Trending</TabsTrigger>
-              <TabsTrigger value="new" className="px-4">New</TabsTrigger>
-              <TabsTrigger value="for-you" className="px-4">For You</TabsTrigger>
-            </TabsList>
-          </div>
-          
-          <TabsContent value="trending" className="mt-0">
-            <ResourceGrid 
-              resources={resources.sort((a, b) => b.likes - a.likes)} 
-              onAction={handleResourceAction} 
-              isLoading={isSearching}
-              searchQuery={searchQuery}
-              onSearchSuggestion={handleSearchSuggestion}
-            />
-          </TabsContent>
-          
-          <TabsContent value="new" className="mt-0">
-            <ResourceGrid 
-              resources={resources.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())} 
-              onAction={handleResourceAction}
-              isLoading={isSearching}
-              searchQuery={searchQuery}
-              onSearchSuggestion={handleSearchSuggestion}
-            />
-          </TabsContent>
-          
-          <TabsContent value="for-you" className="mt-0">
-            <ResourceGrid 
-              resources={resources.filter(r => r.recommended)} 
-              onAction={handleResourceAction}
-              isLoading={isSearching}
-              searchQuery={searchQuery}
-              onSearchSuggestion={handleSearchSuggestion}
-            />
-          </TabsContent>
-        </Tabs>
+        <ResourceGrid 
+          resources={resources.sort((a, b) => b.likes - a.likes)} 
+          onAction={handleResourceAction} 
+          isLoading={isSearching}
+          searchQuery={searchQuery}
+          onSearchSuggestion={handleSearchSuggestion}
+        />
       </div>
     </main>
   );
