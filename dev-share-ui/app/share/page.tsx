@@ -15,6 +15,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { toast } from "sonner";
+import Navbar from "@/components/Navbar";
 
 export default function ShareResourcePage() {
   const [url, setUrl] = useState("");
@@ -53,15 +55,84 @@ export default function ShareResourcePage() {
     // const resource = await processResourceWithAI({ url, prompt });
     
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    //set the max processing time
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    try{
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL_WITH_API}/share`,{
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: url,
+          prompt: prompt
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      
+      if(!res.ok){
+        toast.error("Uh oh! Something went wrong. Please try again later.");
+        throw new Error('Request failed');
+      }
+      const data = await res.json();
+      const taskId = data.taskId;
+
+      toast.success("Processing resource...please check status later", {duration: 2500});
+      
+      //polling start
+      let pollCount = 0;
+      const maxPolls = 5; 
+      const pollInterval = 3000;
+
+      const pollStatus = async () => {
+        pollCount++;
+      
+        try {
+          const statusRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL_WITH_API}/share/status/${taskId}`);
+          const statusData = await statusRes.json();
+      
+          if (statusData.status === "success") {
+            toast.success("Resource processing completed!");
+            router.push("/");
+            return;
+          } else if (statusData.status === "failed") {
+            toast.error("Resource processing failed.");
+            return;
+          } else if (statusData.status === "pending") {
+            console.log(`Polling #${pollCount}: still pending...`);
+          }
+      
+          if (pollCount >= maxPolls) {
+            toast.error("Resource processing timed out.");
+            return;
+          }
+      
+          setTimeout(pollStatus, pollInterval);
+      
+        } catch (err) {
+          toast.error("Polling error occurred.");
+        }
+      };
+      pollStatus();
+
+    }catch(error){
+      const err = error as Error;
+      if (err.name === 'AbortError') {
+        toast.error("Request timed out after 5 seconds.");
+      } else {
+        toast.error("An unexpected error occurred.");
+      }
+    }
     setIsSubmitting(false);
     router.push("/");
   };
 
   return (
-    <main className="min-h-screen bg-background py-12">
-      <div className="container px-4 mx-auto max-w-2xl">
+    <main className="min-h-screen bg-background">
+        <Navbar />
+      <div className="container px-4 py-8 mx-auto max-w-2xl">
         <Card className="animate-in fade-in-50 slide-in-from-bottom-8 duration-300">
           <CardHeader>
             <CardTitle className="text-2xl">Share a Resource</CardTitle>
@@ -114,7 +185,7 @@ export default function ShareResourcePage() {
                 {isSubmitting ? (
                   <>
                     <div className="h-4 w-4 mr-2 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                    Processing...
+                    Submitting...
                   </>
                 ) : (
                   "Share Resource"
