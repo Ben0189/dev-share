@@ -1,16 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink, ThumbsUp, Bookmark } from "lucide-react";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { ExternalLink, ThumbsUp, Bookmark, Link as LinkIcon } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 import { Resource } from "@/lib/types";
 
 interface ResourceCardProps {
@@ -18,85 +12,72 @@ interface ResourceCardProps {
   onAction: (id: string, action: 'like' | 'bookmark') => void;
 }
 
-export default function ResourceCard({ resource, onAction }: ResourceCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
+function timeAgo(dateString: string) {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diff = now.getTime() - date.getTime();
+  const years = Math.floor(diff / (1000 * 60 * 60 * 24 * 365));
+  if (years > 0) return `over ${years} year${years > 1 ? 's' : ''} ago`;
+  const months = Math.floor(diff / (1000 * 60 * 60 * 24 * 30));
+  if (months > 0) return `${months} month${months > 1 ? 's' : ''} ago`;
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+  return 'recently';
+}
 
+export default function ResourceCard({ resource, onAction }: ResourceCardProps) {
   return (
-    <Card 
-      className="h-full transition-all duration-300 hover:shadow-md flex flex-col group bg-card border-muted"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <CardHeader className="pb-2 pt-4 px-5">
-        <div className="flex flex-wrap gap-2 mb-1">
+    <Card className="flex flex-col justify-between min-h-[320px] min-w-0 p-0 rounded-xl border shadow-sm bg-white transition-all duration-300 hover:shadow-md">
+      {/* Author and meta */}
+      <div className="flex items-center gap-3 px-6 pt-6 pb-2">
+        <img
+          src={resource.authorAvatar}
+          alt={resource.authorName}
+          className="w-10 h-10 rounded-full object-cover border"
+        />
+        <div className="flex flex-col">
+          <span className="font-medium text-sm text-foreground leading-tight">{resource.authorName}</span>
+          <span className="text-xs text-muted-foreground">{timeAgo(resource.createdAt)}</span>
+        </div>
+      </div>
+      {/* Title and description */}
+      <div className="flex-1 px-6 pt-2 pb-0 flex flex-col">
+        <h3 className="text-lg font-semibold leading-snug mb-1 text-foreground">{resource.title}</h3>
+        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{resource.description}</p>
+        <div className="flex flex-wrap gap-2 mb-2 mt-auto">
           {resource.tags.map((tag) => (
-            <Badge key={tag} variant="outline" className="text-xs font-medium">
-              {tag}
-            </Badge>
+            <Badge key={tag} variant="outline" className="text-xs font-medium">#{tag}</Badge>
           ))}
         </div>
-        <h3 className="text-xl font-semibold tracking-tight line-clamp-2 group-hover:text-primary transition-colors">{resource.title}</h3>
-      </CardHeader>
-      
-      <CardContent className="flex-1 p-5 pt-0">
-        <p className="text-sm text-muted-foreground line-clamp-3">
-          {resource.description}
-        </p>
-      </CardContent>
-      
-      <CardFooter className="p-5 pt-0 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant={resource.isLiked ? "default" : "ghost"}
-                  className={`h-8 px-3 ${resource.isLiked ? 'text-primary-foreground' : 'text-muted-foreground'} transition-all duration-200`}
-                  onClick={() => onAction(resource.id, 'like')}
-                >
-                  <ThumbsUp className={`mr-1 h-4 w-4 ${resource.isLiked ? 'fill-current' : ''}`} />
-                  <span>{resource.likes}</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p>{resource.isLiked ? 'Unlike' : 'Like'} this resource</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant={resource.isBookmarked ? "default" : "ghost"}
-                  className={`h-8 px-3 ${resource.isBookmarked ? 'text-primary-foreground' : 'text-muted-foreground'} transition-all duration-200`}
-                  onClick={() => onAction(resource.id, 'bookmark')}
-                >
-                  <Bookmark className={`h-4 w-4 ${resource.isBookmarked ? 'fill-current' : ''}`} />
-                  <span className="sr-only">Bookmark</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p>{resource.isBookmarked ? 'Remove bookmark' : 'Bookmark'} this resource</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+      </div>
+      {/* Footer actions */}
+      <div className="flex items-center justify-between px-6 py-4 border-t mt-2">
+        <div className="flex items-center gap-6 text-muted-foreground">
+          <button
+            className={`flex items-center gap-1 text-xs hover:text-primary transition-colors ${resource.isLiked ? 'font-semibold text-primary' : ''}`}
+            onClick={() => onAction(resource.id, 'like')}
+            aria-label="Like"
+          >
+            <ThumbsUp className="h-4 w-4" />
+            {resource.likes}
+          </button>
+          <span className="flex items-center gap-1 text-xs">
+            <LinkIcon className="h-4 w-4" />
+            {resource.linkClicks}
+            <span className="ml-1">Link</span>
+          </span>
         </div>
-        
-        <Button 
-          size="sm" 
-          variant="outline" 
-          className="transition-all duration-200 hover:bg-primary hover:text-primary-foreground"
+        <Button
           asChild
+          size="sm"
+          className="px-5 font-semibold text-base bg-primary hover:bg-primary/90 text-white"
         >
-          <a href={resource.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
-            <span className="mr-2">View</span>
+          <a href={resource.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+            Visit
             <ExternalLink className="h-4 w-4" />
           </a>
         </Button>
-      </CardFooter>
+      </div>
     </Card>
   );
 }

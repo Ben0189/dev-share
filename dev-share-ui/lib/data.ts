@@ -12,7 +12,11 @@ export const mockResources: Resource[] = [
     date: "2023-01-15",
     isLiked: false,
     isBookmarked: false,
-    recommended: true
+    recommended: true,
+    authorName: "Sarah Chen",
+    authorAvatar: "https://avatar.iran.liara.run/public/girl",
+    linkClicks: 1248,
+    createdAt: "2022-01-01"
   },
   {
     id: "2",
@@ -25,7 +29,11 @@ export const mockResources: Resource[] = [
     date: "2023-03-22",
     isLiked: false,
     isBookmarked: false,
-    recommended: true
+    recommended: true,
+    authorName: "John Doe",
+    authorAvatar: "https://avatar.iran.liara.run/public/boy",
+    linkClicks: 980,
+    createdAt: "2022-03-01"
   },
   {
     id: "3",
@@ -38,7 +46,11 @@ export const mockResources: Resource[] = [
     date: "2023-02-10",
     isLiked: false,
     isBookmarked: false,
-    recommended: false
+    recommended: false,
+    authorName: "Emily Zhang",
+    authorAvatar: "https://avatar.iran.liara.run/public/girl",
+    linkClicks: 720,
+    createdAt: "2022-02-01"
   },
   {
     id: "4",
@@ -51,7 +63,11 @@ export const mockResources: Resource[] = [
     date: "2023-04-05",
     isLiked: false,
     isBookmarked: false,
-    recommended: false
+    recommended: false,
+    authorName: "Alex Kim",
+    authorAvatar: "https://avatar.iran.liara.run/public/boy",
+    linkClicks: 410,
+    createdAt: "2022-04-01"
   },
   {
     id: "5",
@@ -64,7 +80,11 @@ export const mockResources: Resource[] = [
     date: "2023-01-30",
     isLiked: false,
     isBookmarked: false,
-    recommended: true
+    recommended: true,
+    authorName: "Priya Patel",
+    authorAvatar: "https://avatar.iran.liara.run/public/girl",
+    linkClicks: 600,
+    createdAt: "2022-01-15"
   },
   {
     id: "6",
@@ -77,6 +97,10 @@ export const mockResources: Resource[] = [
     date: "2023-05-12",
     isLiked: false,
     isBookmarked: false,
-    recommended: false
+    recommended: false,
+    authorName: "Liam Smith",
+    authorAvatar: "https://avatar.iran.liara.run/public/boy",
+    linkClicks: 320,
+    createdAt: "2022-05-01"
   }
 ];

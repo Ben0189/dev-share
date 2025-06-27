@@ -10,6 +10,10 @@ export interface Resource {
   isLiked: boolean;
   isBookmarked: boolean;
   recommended: boolean;
+  authorName: string;
+  authorAvatar: string;
+  linkClicks: number;
+  createdAt: string;
 }
 
 export interface VectorSearchResultDTO {
