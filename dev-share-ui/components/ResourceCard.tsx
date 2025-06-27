@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { ExternalLink, ThumbsUp, Bookmark, Link as LinkIcon, MessageSquare } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,15 @@ function timeAgo(dateString: string) {
 
 export default function ResourceCard({ resource, onAction }: ResourceCardProps) {
   return (
-    <Card className="flex flex-col justify-between min-h-[320px] min-w-0 p-0 rounded-xl border shadow-sm bg-white transition-all duration-300 hover:shadow-md">
+    <Card className="flex flex-col justify-between min-h-[320px] min-w-0 p-0 rounded-xl border shadow-sm bg-white transition-all duration-300 hover:shadow-md relative">
+      {/* Bookmark button top right */}
+      <button
+        className={`absolute top-4 right-4 z-10 bg-white/80 rounded-full p-2 shadow-sm border border-muted-foreground/10 hover:bg-primary/10 transition-colors ${resource.isBookmarked ? 'text-primary' : 'text-muted-foreground'}`}
+        onClick={() => onAction(resource.id, 'bookmark')}
+        aria-label={resource.isBookmarked ? "Remove bookmark" : "Bookmark"}
+      >
+        <Bookmark className={`h-5 w-5 ${resource.isBookmarked ? 'fill-current' : ''}`} />
+      </button>
       {/* Author and meta */}
       <div className="flex items-center gap-3 px-6 pt-6 pb-2">
         <img
