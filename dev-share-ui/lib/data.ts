@@ -16,7 +16,8 @@ export const mockResources: Resource[] = [
     authorName: "Sarah Chen",
     authorAvatar: "https://avatar.iran.liara.run/public/girl",
     linkClicks: 1248,
-    createdAt: "2022-01-01"
+    createdAt: "2022-01-01",
+    comment: "I read this docs and I learn a lot of new things. Very recommend for beginners to React!"
   },
   {
     id: "2",
@@ -33,7 +34,8 @@ export const mockResources: Resource[] = [
     authorName: "John Doe",
     authorAvatar: "https://avatar.iran.liara.run/public/boy",
     linkClicks: 980,
-    createdAt: "2022-03-01"
+    createdAt: "2022-03-01",
+    comment: "This course helped me understand Next.js routing and data fetching. Great for anyone new to full-stack!"
   },
   {
     id: "3",
@@ -50,7 +52,8 @@ export const mockResources: Resource[] = [
     authorName: "Emily Zhang",
     authorAvatar: "https://avatar.iran.liara.run/public/girl",
     linkClicks: 720,
-    createdAt: "2022-02-01"
+    createdAt: "2022-02-01",
+    comment: "If you want to master TypeScript, this handbook is a must-read. It made types so much clearer for me."
   },
   {
     id: "4",
@@ -67,7 +70,8 @@ export const mockResources: Resource[] = [
     authorName: "Alex Kim",
     authorAvatar: "https://avatar.iran.liara.run/public/boy",
     linkClicks: 410,
-    createdAt: "2022-04-01"
+    createdAt: "2022-04-01",
+    comment: "Tailwind made my CSS workflow so much faster. This crash course is a great starting point."
   },
   {
     id: "5",
@@ -84,7 +88,8 @@ export const mockResources: Resource[] = [
     authorName: "Priya Patel",
     authorAvatar: "https://avatar.iran.liara.run/public/girl",
     linkClicks: 600,
-    createdAt: "2022-01-15"
+    createdAt: "2022-01-15",
+    comment: "I always recommend this tutorial to friends who want to learn modern JavaScript. Super clear and practical."
   },
   {
     id: "6",
@@ -101,6 +106,7 @@ export const mockResources: Resource[] = [
     authorName: "Liam Smith",
     authorAvatar: "https://avatar.iran.liara.run/public/boy",
     linkClicks: 320,
-    createdAt: "2022-05-01"
+    createdAt: "2022-05-01",
+    comment: "Helped me boost my website speed. The tips here are easy to follow and really work!"
   }
 ];

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink, ThumbsUp, Bookmark, Link as LinkIcon } from "lucide-react";
+import { ExternalLink, ThumbsUp, Bookmark, Link as LinkIcon, MessageSquare } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Resource } from "@/lib/types";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ResourceCardProps {
   resource: Resource;
@@ -40,6 +41,22 @@ export default function ResourceCard({ resource, onAction }: ResourceCardProps) 
           <span className="text-xs text-muted-foreground">{timeAgo(resource.createdAt)}</span>
         </div>
       </div>
+      {/* User comment (collapsed, tooltip on hover) */}
+      {resource.comment && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="px-6 pb-1 flex items-start gap-2 cursor-pointer">
+                <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <span className="italic text-muted-foreground text-sm line-clamp-1 max-w-full" style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{resource.comment}</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs whitespace-pre-line">
+              {resource.comment}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
       {/* Title and description */}
       <div className="flex-1 px-6 pt-2 pb-0 flex flex-col">
         <h3 className="text-lg font-semibold leading-snug mb-1 text-foreground">{resource.title}</h3>

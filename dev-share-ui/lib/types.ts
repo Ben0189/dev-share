@@ -14,6 +14,7 @@ export interface Resource {
   authorAvatar: string;
   linkClicks: number;
   createdAt: string;
+  comment: string;
 }
 
 export interface VectorSearchResultDTO {
