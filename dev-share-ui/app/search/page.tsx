@@ -10,11 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { mockResources } from "@/lib/data";
 import { Resource, VectorSearchResultDTO } from "@/lib/types";
+import EmptyState from "@/components/EmptyState";
+import { Switch } from "@/components/ui/switch";
 
 export default function SearchPage() {
   const [resources, setResources] = useState(mockResources);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showEmpty, setShowEmpty] = useState(false);
   const topRelative = 6;
 
   const searchResources = async(query: string) : Promise<Resource[]>=> {
@@ -94,16 +97,30 @@ export default function SearchPage() {
       
       <div className="container px-4 py-8 mx-auto max-w-7xl">
         <div className="flex items-center justify-between mb-8">
-          <span className="text-lg font-medium text-muted-foreground">{resources.length} resources found</span>
+          <div className="flex items-center gap-4">
+            <span className="text-lg font-medium text-muted-foreground">{resources.length} resources found</span>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+              <Switch checked={showEmpty} onCheckedChange={() => setShowEmpty((v) => !v)} />
+              Dev Toggle
+            </label>
+          </div>
           <a href="#" className="text-primary hover:underline flex items-center gap-1 text-sm font-medium">View All <span aria-hidden="true">→</span></a>
         </div>
-        <ResourceGrid 
-          resources={resources.sort((a, b) => b.likes - a.likes)} 
-          onAction={handleResourceAction} 
-          isLoading={isSearching}
-          searchQuery={searchQuery}
-          onSearchSuggestion={handleSearchSuggestion}
-        />
+        {showEmpty ? (
+          <EmptyState
+            searchQuery={searchQuery}
+            onGlobalSearch={(q) => alert(`SuperPro AI global search for: ${q || ''}`)}
+            showToggle={true}
+          />
+        ) : (
+          <ResourceGrid 
+            resources={resources.sort((a, b) => b.likes - a.likes)} 
+            onAction={handleResourceAction} 
+            isLoading={isSearching}
+            searchQuery={searchQuery}
+            onSearchSuggestion={handleSearchSuggestion}
+          />
+        )}
       </div>
     </main>
   );
