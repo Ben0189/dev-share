@@ -74,6 +74,7 @@ export default function ResourceGrid({
           <ResourceCard 
             resource={resource} 
             onAction={onAction} 
+            isAIGenerated={resource.isAIGenerated}
           />
         </div>
       ))}

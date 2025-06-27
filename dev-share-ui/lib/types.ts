@@ -15,6 +15,7 @@ export interface Resource {
   linkClicks: number;
   createdAt: string;
   comment: string;
+  isAIGenerated?: boolean;
 }
 
 export interface VectorSearchResultDTO {

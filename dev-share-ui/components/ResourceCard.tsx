@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 interface ResourceCardProps {
   resource: Resource;
   onAction: (id: string, action: 'like' | 'bookmark') => void;
+  isAIGenerated?: boolean;
 }
 
 function timeAgo(dateString: string) {
@@ -25,9 +26,16 @@ function timeAgo(dateString: string) {
   return 'recently';
 }
 
-export default function ResourceCard({ resource, onAction }: ResourceCardProps) {
+export default function ResourceCard({ resource, onAction, isAIGenerated = false }: ResourceCardProps) {
   return (
-    <Card className="flex flex-col justify-between min-h-[320px] min-w-0 p-0 rounded-xl border shadow-sm bg-white transition-all duration-300 hover:shadow-md relative">
+    <Card className={`flex flex-col justify-between min-h-[320px] min-w-0 p-0 rounded-xl border shadow-sm bg-white transition-all duration-300 hover:shadow-md relative ${isAIGenerated ? 'border-indigo-500 ring-2 ring-indigo-200' : ''}`}>
+      {/* AI Generated badge */}
+      {isAIGenerated && (
+        <span className="absolute top-4 left-4 z-10 bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-semibold shadow border border-indigo-200 flex items-center gap-1">
+          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 20 20"><path d="M10 2a1 1 0 0 1 1 1v1.07a7.002 7.002 0 0 1 5.93 5.93H18a1 1 0 1 1 0 2h-1.07a7.002 7.002 0 0 1-5.93 5.93V18a1 1 0 1 1-2 0v-1.07a7.002 7.002 0 0 1-5.93-5.93H2a1 1 0 1 1 0-2h1.07a7.002 7.002 0 0 1 5.93-5.93V3a1 1 0 0 1 1-1z"/></svg>
+          AI Generated
+        </span>
+      )}
       {/* Bookmark button top right */}
       <button
         className={`absolute top-4 right-4 z-10 bg-white/80 rounded-full p-2 shadow-sm border border-muted-foreground/10 hover:bg-primary/10 transition-colors ${resource.isBookmarked ? 'text-primary' : 'text-muted-foreground'}`}
