@@ -25,6 +25,7 @@ export default function ShareResourceForm({ onClose, onSubmit }: ShareResourceFo
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [comment, setComment] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,6 +80,7 @@ export default function ShareResourceForm({ onClose, onSubmit }: ShareResourceFo
       description,
       tags,
       date: new Date().toISOString(),
+      comment,
     };
     
     // Simulate API call
@@ -91,6 +93,7 @@ export default function ShareResourceForm({ onClose, onSubmit }: ShareResourceFo
     setTitle("");
     setDescription("");
     setTags([]);
+    setComment("");
     setIsSubmitting(false);
     onClose();
   };
@@ -135,13 +138,14 @@ export default function ShareResourceForm({ onClose, onSubmit }: ShareResourceFo
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="comment">Your Comment <span className="text-destructive">*</span></Label>
             <Textarea
-              id="description"
-              placeholder="Brief description of the resource"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              id="comment"
+              placeholder="Share your thoughts, experience, or recommendation about this resource (e.g. I read this docs and I learn a lot... very recommend for beginner to React!)"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
               rows={3}
+              required
             />
           </div>
           

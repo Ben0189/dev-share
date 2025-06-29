@@ -18,7 +18,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <BookMarked className="w-6 h-6" />
           <Link href="/" className="text-xl font-bold tracking-tight">
-            DevFindAI
+            Blotz Dev Share
           </Link>
         </div>
 

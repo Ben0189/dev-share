@@ -7,8 +7,8 @@ import { Toaster } from 'sonner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'DevFindAI - Developer Resource Discovery',
-  description: 'Discover the best developer resources powered by AI',
+  title: 'blotz dev share',
+  description: 'A place to discover and share the best developer resources with the community',
 };
 
 export default function RootLayout({

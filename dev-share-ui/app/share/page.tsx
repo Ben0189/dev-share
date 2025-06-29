@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Link as LinkIcon } from "lucide-react";
+import { Link as LinkIcon, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +20,7 @@ import Navbar from "@/components/Navbar";
 
 export default function ShareResourcePage() {
   const [url, setUrl] = useState("");
-  const [prompt, setPrompt] = useState("");
+  const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [urlError, setUrlError] = useState("");
   const router = useRouter();
@@ -66,7 +66,7 @@ export default function ShareResourcePage() {
         },
         body: JSON.stringify({
           url: url,
-          prompt: prompt
+          comment: comment
         }),
         signal: controller.signal,
       });
@@ -133,15 +133,16 @@ export default function ShareResourcePage() {
     <main className="min-h-screen bg-background">
         <Navbar />
       <div className="container px-4 py-8 mx-auto max-w-2xl">
-        <Card className="animate-in fade-in-50 slide-in-from-bottom-8 duration-300">
+        <Card className="animate-in fade-in-50 slide-in-from-bottom-8 duration-300 rounded-2xl shadow-lg bg-white">
           <CardHeader>
             <CardTitle className="text-2xl">Share a Resource</CardTitle>
             <CardDescription>
               Share a valuable developer resource. Our AI will analyze it and add relevant details.
             </CardDescription>
+            <hr className="my-4 border-muted" />
           </CardHeader>
           <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="url">Resource URL <span className="text-destructive">*</span></Label>
                 <div className="relative">
@@ -152,35 +153,45 @@ export default function ShareResourcePage() {
                     placeholder="https://example.com/resource"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 focus:ring-2 focus:ring-primary/30 hover:border-primary transition-all duration-200"
                     required
                   />
                 </div>
                 {urlError && <p className="text-sm text-destructive">{urlError}</p>}
               </div>
-              
               <div className="space-y-2">
-                <Label htmlFor="prompt">Additional Context (Optional)</Label>
+                <Label htmlFor="comment" className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                  Your Comment
+                </Label>
                 <Textarea
-                  id="prompt"
-                  placeholder="Add any details that might help our AI better understand this resource (e.g., 'Great for React beginners')"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
+                  id="comment"
+                  placeholder="Share your thoughts, experience, or recommendation about this resource (e.g. I read this docs and I learn a lot... very recommend for beginner to React!)"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
                   rows={3}
+                  required
+                  className="focus:ring-2 focus:ring-primary/30 hover:border-primary transition-all duration-200"
                 />
+                <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
+                  <span>Let others know why you recommend this resource.</span>
+                  <span>{comment.length}/200</span>
+                </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
+            <CardFooter className="flex flex-col sm:flex-row sm:justify-between gap-2 mt-2">
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={() => router.push("/")}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button 
                 type="submit" 
                 disabled={isSubmitting || !url.trim()}
+                className="w-full sm:w-auto bg-primary text-white font-semibold px-6 py-2 rounded-lg flex items-center justify-center gap-2 shadow-md hover:bg-primary/90 transition-all duration-200"
               >
                 {isSubmitting ? (
                   <>
@@ -188,7 +199,9 @@ export default function ShareResourcePage() {
                     Submitting...
                   </>
                 ) : (
-                  "Share Resource"
+                  <>
+                    Share Resource
+                  </>
                 )}
               </Button>
             </CardFooter>
