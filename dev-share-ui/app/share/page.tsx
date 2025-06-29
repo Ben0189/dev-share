@@ -58,6 +58,8 @@ export default function ShareResourcePage() {
     //set the max processing time
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+    //TODO: Move this to "share" service
     try{
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL_WITH_API}/share`,{
         method: 'POST',

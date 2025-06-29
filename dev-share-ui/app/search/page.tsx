@@ -22,6 +22,8 @@ export default function SearchPage() {
   const [showEmpty, setShowEmpty] = useState(false);
   const topRelative = 6;
 
+  //TODO: Test if search still working with the backend API
+  //TODO: Move search logic to a service folder
   const searchResources = async(query: string) : Promise<Resource[]>=> {
     const result = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL_WITH_API}/search`,{
       method: 'POST',
@@ -134,6 +136,7 @@ export default function SearchPage() {
           </div>
           <a href="#" className="text-primary hover:underline flex items-center gap-1 text-sm font-medium">View All <span aria-hidden="true">→</span></a>
         </div>
+        {/* TODO: remove showEmpty */}
         {showEmpty ? (
           <EmptyState
             searchQuery={searchQuery}
