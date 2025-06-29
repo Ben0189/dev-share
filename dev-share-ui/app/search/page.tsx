@@ -47,6 +47,7 @@ export default function SearchPage() {
         tags: [],
         likes: 0,
         date: new Date().toISOString(),
+        comment: "",
         isLiked: false,
         isBookmarked: false,
         recommended: false,
