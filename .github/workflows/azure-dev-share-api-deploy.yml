@@ -1,4 +1,4 @@
-name: CI/CD for .NET 
+name: staging - backend api deployment 
 
 on:
   pull_request:
@@ -107,7 +107,7 @@ jobs:
       - name: EF - Apply Migration SQL Script 
         uses: azure/sql-action@v2.3
         with:
-          connection-string: "Server=tcp:sqldb-dev-share.database.windows.net,1433;Initial Catalog=sqldb-dev-share;Persist Security Info=False;User ID=devshare;Password=Df34@#fd;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+          connection-string: ${{ secrets.CONNECTION_STRING }}
           path: ./migrations.sql
 
       - name: Deploy to Azure Web App - Test
