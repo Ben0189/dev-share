@@ -113,7 +113,7 @@ jobs:
         with:
           app-name: dev-share-api
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ./publish
+          package: './'
 
       - name: Post-deployment verification
         run: |
