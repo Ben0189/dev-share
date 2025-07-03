@@ -22,18 +22,21 @@ public class ExtractController : ControllerBase
     private readonly IEmbeddingService _embeddingService;
     private readonly IVectorService _vectorService;
     private readonly ShareChainExecutor _shareChainExecutor;
+    private readonly IResourceService _resourceService;
     private static readonly ConcurrentDictionary<string, ShareTask> TaskStore = new();
 
     public ExtractController(
         ISummaryService summaryService,
         IEmbeddingService embeddingService,
         IVectorService vectorService,
-        ShareChainExecutor shareChainExecutor)
+        ShareChainExecutor shareChainExecutor,
+        IResourceService resourceService)
     {
         _summaryService = summaryService;
         _embeddingService = embeddingService;
         _vectorService = vectorService;
         _shareChainExecutor = shareChainExecutor;
+        _resourceService = resourceService;
     }
 
     [HttpPost("share")]
@@ -115,6 +118,18 @@ public class ExtractController : ControllerBase
             status = task.Status,
             message = task.Message
         });
+    }
+    
+    [HttpPost("sql/save")]
+    public async Task saveReource([FromBody] ResourceDTO request)
+    {
+        await _resourceService.AddResourceAsync(request);
+    }
+    
+    [HttpGet("sql/query")]
+    public async Task<ResourceDTO> saveReource(String url)
+    {
+        return await _resourceService.GetResource(url);
     }
 
     [HttpPost("search")]

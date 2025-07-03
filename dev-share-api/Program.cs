@@ -5,6 +5,8 @@ using Services;
 using Executor;
 using Azure.AI.OpenAI;
 using System.ClientModel;
+using Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -64,6 +66,10 @@ builder.Services.AddSingleton<AzureOpenAIClient>(_ =>
     return new AzureOpenAIClient(new Uri(endpoint), new ApiKeyCredential(apiKey));
 });
 
+// Sql Server
+builder.Services.AddDbContext<DevShareDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.AddHttpClient("FastEmbed", client =>
 {
     client.BaseAddress = new Uri("https://python-ai-model-acgfbgfbffb0fyav.australiaeast-01.azurewebsites.net");
@@ -96,6 +102,7 @@ builder.Services.AddScoped<IShareChainHandle, SummarizeShareChainHandle>();
 builder.Services.AddScoped<IShareChainHandle, EmbeddingShareChainHandle>();
 builder.Services.AddScoped<IShareChainHandle, VectorShareChainHandle>();
 
+builder.Services.AddScoped<IResourceService, ResourceService>();
 
 var app = builder.Build();
 
