@@ -1,9 +1,10 @@
 name: CI/CD for .NET 
 
 on:
+  pull_request:
+    branches: ['main']
   push:
-    branches:
-      - '**' 
+    branches: ['main']
 
 env:
   DOTNET_VERSION: '9.0.x'
@@ -12,7 +13,8 @@ jobs:
   # CI job - runs for PRs to main
   ci:
     runs-on: windows-latest
-    
+    if: github.event_name == 'pull_request'
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -38,6 +40,7 @@ jobs:
   # Build job - runs when PR is merged to main
   build:
     runs-on: windows-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     steps:
       - name: Checkout code
