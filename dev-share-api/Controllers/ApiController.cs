@@ -119,18 +119,6 @@ public class ExtractController : ControllerBase
             message = task.Message
         });
     }
-    
-    [HttpPost("sql/save")]
-    public async Task saveReource([FromBody] ResourceDTO request)
-    {
-        await _resourceService.AddResourceAsync(request);
-    }
-    
-    [HttpGet("sql/query")]
-    public async Task<ResourceDTO> saveReource(String url)
-    {
-        return await _resourceService.GetResource(url);
-    }
 
     [HttpPost("search")]
     public async Task<ActionResult<float[]>> Search([FromBody] SearchRequest request)
