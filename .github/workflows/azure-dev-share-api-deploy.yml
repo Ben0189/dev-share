@@ -55,6 +55,9 @@ jobs:
           dotnet build ./dev-share-api/dev-share-api.csproj --configuration Release --no-restore
           dotnet test ./dev-share-api/dev-share-api.csproj --configuration Release --no-build --verbosity normal
 
+      - name: Install EF Core tools
+        run: dotnet tool install --global dotnet-ef
+
       - name: .NET Tool restore
         working-directory: ./dev-share-api
         run: dotnet tool restore
