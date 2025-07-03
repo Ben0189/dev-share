@@ -1,4 +1,4 @@
-name: CI/CD for FastAPI Embedding Service
+name: staging - Embedding Service deployment 
 
 on:
   pull_request:
