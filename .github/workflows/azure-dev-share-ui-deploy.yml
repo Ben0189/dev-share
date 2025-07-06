@@ -1,4 +1,4 @@
-name: CI/CD for Next.js
+name: staging - frontend api deployment 
 
 on:
   pull_request:
