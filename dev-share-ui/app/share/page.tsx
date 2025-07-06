@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
-import { submitSharedResource, pollShareStatus } from "@/services/share-service";
+import { submitSharedResource} from "@/services/share-service";
+import { pollShareStatus } from "@/services/polling-service";
 
 export default function ShareResourcePage() {
   const [url, setUrl] = useState("");
