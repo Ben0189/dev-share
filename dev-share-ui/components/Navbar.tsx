@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { BookMarked } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import Link from 'next/link';
+import { BookMarked } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ThemeToggle } from "@/components/ThemeToggle";
+} from '@/components/ui/dropdown-menu';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function Navbar() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
-      <div className="container flex h-16 items-center justify-between px-4 mx-auto max-w-7xl">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm px-4">
+      <div className="container flex h-16 items-center justify-between mx-auto max-w-7xl">
         <div className="flex items-center gap-2">
           <BookMarked className="w-6 h-6" />
           <Link href="/" className="text-xl font-bold tracking-tight">
@@ -22,22 +22,22 @@ export default function Navbar() {
           </Link>
         </div>
 
-        <nav className="hidden md:flex items-center gap-6">
-          <Link 
+        <nav className="hidden md:flex items-center gap-8">
+          <Link
             href="/"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="text-md font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Discover
           </Link>
-          <Link 
+          <Link
             href="/share"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="text-md font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Share
           </Link>
-          <Link 
+          <Link
             href="/collections"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="text-md font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Collections
           </Link>
