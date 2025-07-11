@@ -1,10 +1,7 @@
-using System;
-using System.Threading.Tasks;
 using HtmlAgilityPack;
 using Microsoft.Playwright;
 using Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.AI;
 using Services;
 using Qdrant.Client.Grpc;
 using System.Text;
@@ -12,7 +9,7 @@ using Executor;
 using System.Collections.Concurrent;
 
 
-namespace UrlExtractorApi.Controllers;
+namespace Controllers;
 
 [ApiController]
 [Route("api")]
@@ -22,75 +19,78 @@ public class ExtractController : ControllerBase
     private readonly IEmbeddingService _embeddingService;
     private readonly IVectorService _vectorService;
     private readonly ShareChainExecutor _shareChainExecutor;
+    private readonly OnlineResearchService _onlineResearchService;
     private static readonly ConcurrentDictionary<string, ShareTask> TaskStore = new();
 
     public ExtractController(
         ISummaryService summaryService,
         IEmbeddingService embeddingService,
         IVectorService vectorService,
-        ShareChainExecutor shareChainExecutor)
+        ShareChainExecutor shareChainExecutor,
+        OnlineResearchService onlineResearchService)
     {
         _summaryService = summaryService;
         _embeddingService = embeddingService;
         _vectorService = vectorService;
         _shareChainExecutor = shareChainExecutor;
+        _onlineResearchService = onlineResearchService;
     }
 
     [HttpPost("share")]
     public async Task<IActionResult> Share([FromBody] UrlRequest request)
     {
-            var url = request.Url;
+        var url = request.Url;
 
-            //URL check
-            if (string.IsNullOrWhiteSpace(url))
-            {
-                return BadRequest("URL is required.");
-            }
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uriResult) ||
-            (uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps))
-            {
-                return BadRequest("URL must start with http:// or https:// and be a valid absolute URL.");
-            }
+        //URL check
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return BadRequest("URL is required.");
+        }
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uriResult) ||
+        (uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps))
+        {
+            return BadRequest("URL must start with http:// or https:// and be a valid absolute URL.");
+        }
 
-            Console.WriteLine($"Extracting: {url}");
+        Console.WriteLine($"Extracting: {url}");
 
-            var taskId = Guid.NewGuid().ToString();
-            var task = new ShareTask
-            {
-                TaskId = taskId,
-                Url = url,
-                Status = "pending"
-            };
-            TaskStore[taskId] = task;
-            Console.WriteLine($"[POST] Saving task: {taskId}");
-            Console.WriteLine($"[POST] TaskStore count: {TaskStore.Count}");
+        var taskId = Guid.NewGuid().ToString();
+        var task = new ShareTask
+        {
+            TaskId = taskId,
+            Url = url,
+            Status = "pending"
+        };
+        TaskStore[taskId] = task;
+        Console.WriteLine($"[POST] Saving task: {taskId}");
+        Console.WriteLine($"[POST] TaskStore count: {TaskStore.Count}");
 
         _ = Task.Run(async () =>
             {
                 try
                 {
-                Console.WriteLine($"Extracting: {url}");
-                var result = TryHtmlAgilityPack(url);
-                if (string.IsNullOrWhiteSpace(result))
-                    result = await TryPlaywright(url);
-                if (string.IsNullOrWhiteSpace(result))
-                    throw new Exception("Content extraction failed.");
+                    Console.WriteLine($"Extracting: {url}");
+                    var result = TryHtmlAgilityPack(url);
+                    if (string.IsNullOrWhiteSpace(result))
+                        result = await TryPlaywright(url);
+                    if (string.IsNullOrWhiteSpace(result))
+                        throw new Exception("Content extraction failed.");
 
-                var prompt = new StringBuilder()
-                    .AppendLine("You will receive an input text and your task is to summarize the article in no more than 100 words.")
-                    .AppendLine("Only return the summary. Do not include any explanation.")
-                    .AppendLine("# Article content:")
-                    .AppendLine($"{result}")
-                    .ToString();
+                    var prompt = new StringBuilder()
+                        .AppendLine("You will receive an input text and your task is to summarize the article in no more than 100 words.")
+                        .AppendLine("Only return the summary. Do not include any explanation.")
+                        .AppendLine("# Article content:")
+                        .AppendLine($"{result}")
+                        .ToString();
 
-                await _shareChainExecutor.ExecuteAsync(new ResourceShareContext
-                {
-                    Url = url,
-                    Prompt = prompt
-                });
+                    await _shareChainExecutor.ExecuteAsync(new ResourceShareContext
+                    {
+                        Url = url,
+                        Prompt = prompt
+                    });
 
-                task.Status = "success";
-                task.Message = "Processed successfully";
+                    task.Status = "success";
+                    task.Message = "Processed successfully";
                 }
                 catch (Exception ex)
                 {
@@ -117,8 +117,46 @@ public class ExtractController : ControllerBase
         });
     }
 
+    [HttpPost("vector/init")]
+    public async Task<ActionResult<float[]>> InitVectorDB()
+    {
+        await _vectorService.InitializeAsync();
+        return Ok();
+    }
+
+    [HttpPost("embedding/indexing")]
+    public async Task<ActionResult<UpdateResult>> Indexing([FromBody] string collectionName, string field)
+    {
+        return Ok(await _vectorService.IndexingAsync(collectionName, field));
+    }
+
+    [HttpPost("insight/share")]
+    public async Task<IActionResult> ShareInsight([FromBody] ShareInsightRequest request)
+    {
+        var insightId = request.InsightId ?? Guid.NewGuid().ToString();
+        var denseEmbedding = await _embeddingService.GetDenseEmbeddingAsync(request.Content);
+        var (indices, values) = await _embeddingService.GetSparseEmbeddingAsync(request.Content);
+
+        var denseVector = new DenseVector();
+        denseVector.Data.AddRange(denseEmbedding);
+
+        var sparseVector = new SparseVector();
+        sparseVector.Indices.AddRange(indices);
+        sparseVector.Values.AddRange(values);
+
+        var vectors = new Dictionary<string, Vector>
+        {
+            ["dense_vector"] = new() { Dense = denseVector },
+            ["sparse_vector"] = new() { Sparse = sparseVector }
+        };
+
+        request.Vectors = vectors;
+        await _vectorService.UpsertInsightAsync(insightId, request.Url, request.Content, request.ResourceId, request.Vectors);
+        return Ok();
+    }
+
     [HttpPost("search")]
-    public async Task<ActionResult<float[]>> Search([FromBody] SearchRequest request)
+    public async Task<IActionResult> Search([FromBody] SearchRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Text))
         {
@@ -129,62 +167,30 @@ public class ExtractController : ControllerBase
 
         try
         {
-            var denseEmbedding = await _embeddingService.GetDenseEmbeddingAsync(request.Text);
-            var (indices, values) = await _embeddingService.GetSparseEmbeddingAsync(request.Text);
-            var results = await _vectorService.SearchEmbeddingAsync(denseQueryVector: denseEmbedding, sparseIndices: indices, sparseValues: values, topK: request.TopRelatives);
-            return Ok(results);
+            var resourceResults = await _vectorService.SearchResourceAsync(
+                query: request.Text,
+                topK: request.TopRelatives);
+
+            var insightResults = await _vectorService.SearchInsightAsync(
+                query: request.Text,
+                topK: request.TopRelatives);
+
+            if (resourceResults == null 
+                || resourceResults.Count == 0 
+                || insightResults == null 
+                || insightResults.Count == 0)
+            {
+                // Fallback to online research
+                var onlineResult = await _onlineResearchService.PerformOnlineResearchAsync(request.Text);
+                return Ok(new { source = "online", result = onlineResult });
+            }
+
+            return Ok(new { source = "vector", result = resourceResults });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, "Search failed due to an internal error.");
         }
-    }
-
-    [HttpPost("vector/init")]
-    public async Task<ActionResult<float[]>> InitVectorDB()
-    {
-        await _vectorService.InitializeAsync();
-        return Ok();
-    }
-
-    [HttpPost("embedding/generate")]
-    public async Task<ActionResult> GenerateEmbedding([FromBody] GenerateEmbeddingRequest request)
-    {
-        var denseEmbedding = await _embeddingService.GetDenseEmbeddingAsync(request.Text);
-        var sparseEmbedding = await _embeddingService.GetSparseEmbeddingAsync(request.Text);
-
-        var denseVector = new DenseVector();
-        denseVector.Data.AddRange(denseEmbedding);
-
-        var sparseVector = new SparseVector();
-        sparseVector.Indices.AddRange(sparseEmbedding.indices); // Item2 = indices
-        sparseVector.Values.AddRange(sparseEmbedding.values);  // Item1 = values
-
-        var vectors = new Dictionary<string, Vector>
-        {
-            ["dense_vector"] = new() { Dense = denseVector },
-            ["sparse_vector"] = new() { Sparse = sparseVector }
-        };
-
-        return Ok(vectors);
-    }
-
-    [HttpPut("embedding/put")]
-    public async Task<ActionResult<UpdateResult>> InsertEmbedding([FromBody] InsertEmbeddingRequest request)
-    {
-        return Ok(await _vectorService.UpsertEmbeddingAsync(request.Url, request.NoteId, request.Text, request.Vectors));
-    }
-
-    // [HttpPut("embedding/put")]
-    // public async Task<ActionResult<UpdateResult>> InsertEmbedding([FromBody] InsertEmbeddingRequest request)
-    // {
-    //     return Ok(await _vectorService.UpsertEmbeddingAsync(request.Url, request.NoteId, request.Text, request.Vectors));
-    // }
-
-    [HttpPost("embedding/indexing")]
-    public async Task<ActionResult<UpdateResult>> Indexing([FromBody] string field)
-    {
-        return Ok(await _vectorService.IndexingAsync(field));
     }
 
     private string? TryHtmlAgilityPack(string url)

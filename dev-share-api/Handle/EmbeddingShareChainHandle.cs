@@ -23,8 +23,20 @@ public class EmbeddingShareChainHandle : BaseShareChainHandle
 
     protected async override Task<HandlerResult> ProcessAsync(ResourceShareContext context)
     {
-        var denseEmbedding = await _embeddingService.GetDenseEmbeddingAsync(context.Summary);
-        var (indices, values) = await _embeddingService.GetSparseEmbeddingAsync(context.Summary);
+        context.ResourceVectors = await GetVectors(context.Summary);
+        
+        if (!string.IsNullOrWhiteSpace(context.Insight))
+        {
+            context.InsightVectors = await GetVectors(context.Insight);
+        }
+
+        return HandlerResult.Success();
+    }
+
+    private async Task<Dictionary<string, Vector>> GetVectors(string text)
+    {
+        var denseEmbedding = await _embeddingService.GetDenseEmbeddingAsync(text);
+        var (indices, values) = await _embeddingService.GetSparseEmbeddingAsync(text);
 
         var denseVector = new DenseVector();
         denseVector.Data.AddRange(denseEmbedding);
@@ -39,7 +51,6 @@ public class EmbeddingShareChainHandle : BaseShareChainHandle
             ["sparse_vector"] = new() { Sparse = sparseVector }
         };
 
-        context.Vectors = vectors;
-        return HandlerResult.Success();
+        return vectors;
     }
 }

@@ -14,16 +14,25 @@ public class VectorShareChainHandle : BaseShareChainHandle
 
     protected override void Validate(ResourceShareContext context)
     {
-        if (context.Vectors == null || context.Vectors.Count == 0)
+        if (context.ResourceVectors == null || context.ResourceVectors.Count == 0)
         {
-            throw new ArgumentNullException(nameof(context.Vectors), "Vectors cannot be null or empty.");
+            throw new ArgumentNullException(nameof(context.ResourceVectors), "Vectors cannot be null or empty.");
         }
     }
 
     protected async override Task<HandlerResult> ProcessAsync(ResourceShareContext context)
     {
-        await _vectorService.UpsertEmbeddingAsync(context.Url, IdGeneratorUtils.GetNextId().ToString(), context.Summary, context.Vectors);
+        var resourceId = Guid.NewGuid().ToString();
+        if (!string.IsNullOrWhiteSpace(context.Summary))
+        {
+            await _vectorService.UpsertResourceAsync(resourceId, context.Url, context.Summary, context.ResourceVectors);
+        }
+        if (!string.IsNullOrWhiteSpace(context.Insight))
+        {
+            var insightId = Guid.NewGuid().ToString();
+            await _vectorService.UpsertInsightAsync(insightId, context.Url, context.Insight, resourceId, context.InsightVectors);
+        }
         return HandlerResult.Success();
     }
-    
+
 }
