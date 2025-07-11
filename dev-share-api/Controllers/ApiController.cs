@@ -129,9 +129,18 @@ public class ExtractController : ControllerBase
 
         try
         {
+            //1.gen prompt embedding
             var denseEmbedding = await _embeddingService.GetDenseEmbeddingAsync(request.Text);
             var (indices, values) = await _embeddingService.GetSparseEmbeddingAsync(request.Text);
-            var results = await _vectorService.SearchEmbeddingAsync(denseQueryVector: denseEmbedding, sparseIndices: indices, sparseValues: values, topK: request.TopRelatives);
+
+            //2.search prompt and get result(content and comment)
+            var ContentResults;
+            var InsightResults;
+            //3. do rerank and get reranked list
+            var rerankResults = GetRerankedList(ContentResults,InsightResults);
+            //4. get　finalResults from sql server by id
+
+
             return Ok(results);
         }
         catch (Exception ex)
@@ -243,5 +252,39 @@ public class ExtractController : ControllerBase
         // 提取所有 <p> 元素的 innerText，去除空行
         var text = await page.EvalOnSelectorAllAsync<string[]>("p", "els => els.map(e => e.innerText).filter(t => t.trim().length > 0)");
         return string.Join("\n", text);
+    }
+    
+    //todo make sure the return data from service is List<Content> and List<Comment>
+    public List<Rerank> GetRerankedList(List<Content> contents, List<Comment> comments)
+    {
+        // averge comment.score
+        var commentGroups = comments
+            .GroupBy(c => c.ContentId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Average(c => c.Score)
+            );
+
+        // content.score find table
+        var contentScores = contents
+            .ToDictionary(c => c.Id, c => c.Score);
+
+        // union all contentId
+        var allContentIds = contentScores.Keys
+            .Union(commentGroups.Keys)
+            .Distinct();
+
+        var result = allContentIds
+            .Select(id => new Rerank
+            {
+                ContentId = id,
+                Score = 
+                    (contentScores.TryGetValue(id, out var cScore) ? cScore : 0) * 0.7 +
+                    (commentGroups.TryGetValue(id, out var comAvg) ? comAvg : 0) * 0.3
+            })
+            .OrderByDescending(r => r.Score)
+            .ToList();
+
+        return result;
     }
 }
