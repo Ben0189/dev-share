@@ -149,7 +149,9 @@ public class VectorService : IVectorService
             prefetch: prefetch,
             query: Fusion.Rrf,
             limit: (ulong)topK,
-            scoreThreshold: (float)0.7 //todo: make this dynamic
+            scoreThreshold: (float)0.7, //todo: make this dynamic
+            payloadSelector: true,
+            vectorsSelector: false
         );
 
         return resourceResults.Select(result =>
@@ -159,7 +161,8 @@ public class VectorService : IVectorService
             {
                 Id = result.Id.ToString(),
                 Url = payload.TryGetValue("url", out var urlVal) && urlVal.KindCase == Value.KindOneofCase.StringValue ? urlVal.StringValue : string.Empty,
-                Content = payload.TryGetValue("content", out var contentVal) && contentVal.KindCase == Value.KindOneofCase.StringValue ? contentVal.StringValue : string.Empty
+                Content = payload.TryGetValue("content", out var contentVal) && contentVal.KindCase == Value.KindOneofCase.StringValue ? contentVal.StringValue : string.Empty,
+                Score = result.Score
             };
         }).ToList();
     }
@@ -182,7 +185,9 @@ public class VectorService : IVectorService
             prefetch: prefetch,
             query: Fusion.Rrf,
             limit: (ulong)topK,
-            scoreThreshold: (float)0.7 //todo: make this dynamic
+            scoreThreshold: (float)0.7, //todo: make this dynamic
+            payloadSelector: true,
+            vectorsSelector: false
         );
 
         return insightResults.Select(result =>
@@ -193,7 +198,8 @@ public class VectorService : IVectorService
                 Id = result.Id.ToString(),
                 Url = payload.TryGetValue("url", out var urlVal) && urlVal.KindCase == Value.KindOneofCase.StringValue ? urlVal.StringValue : string.Empty,
                 Content = payload.TryGetValue("content", out var contentVal) && contentVal.KindCase == Value.KindOneofCase.StringValue ? contentVal.StringValue : string.Empty,
-                ResourceId = payload.TryGetValue("resourceId", out var resourceIdVal) && resourceIdVal.KindCase == Value.KindOneofCase.StringValue ? resourceIdVal.StringValue : string.Empty
+                ResourceId = payload.TryGetValue("resourceId", out var resourceIdVal) && resourceIdVal.KindCase == Value.KindOneofCase.StringValue ? resourceIdVal.StringValue : string.Empty,
+                Score = result.Score
             };
         }).ToList();
     }
