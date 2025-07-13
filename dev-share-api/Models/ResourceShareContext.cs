@@ -10,4 +10,7 @@ public class ResourceShareContext
     public Dictionary<string, Vector>? ResourceVectors { get; set; }
     public Dictionary<string, Vector>? InsightVectors { get; set; }
     public string? Prompt { get; set; }
+    public ResourceDTO? ExistingResource { get; set; }
+
+
 }

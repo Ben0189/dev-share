@@ -1,25 +1,19 @@
-using Configuration;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Configuration
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true)
+    .AddJsonFile("appsettings.json", false, true)
+    .AddJsonFile("appsettings.local.json", true, true)
     .AddEnvironmentVariables();
 
 // optional - if you don't want to have 'appsettings.local.json' for debugging purpose
 // Load secrets in development before building
-if (builder.Environment.IsDevelopment())
-{
-    builder.Configuration.AddUserSecrets<Program>();
-}
+if (builder.Environment.IsDevelopment()) builder.Configuration.AddUserSecrets<Program>();
 
 // Service Registration
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
 builder.Services
     .AddSwaggerConfiguration()
     .AddCorsConfiguration()

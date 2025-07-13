@@ -5,7 +5,6 @@ namespace Services;
 
 public class EmbeddingShareChainHandle : BaseShareChainHandle
 {
-
     private readonly IEmbeddingService _embeddingService;
 
     public EmbeddingShareChainHandle(IEmbeddingService embeddingService)
@@ -15,13 +14,11 @@ public class EmbeddingShareChainHandle : BaseShareChainHandle
 
     protected override void Validate(ResourceShareContext context)
     {
-        if (string.IsNullOrWhiteSpace(context.Summary))
-        {
-            throw new ArgumentNullException(nameof(context.Summary), "Prompt cannot be null or empty.");
-        }
+        // if (string.IsNullOrWhiteSpace(context.Summary))
+        //     throw new ArgumentNullException(nameof(context.Summary), "Prompt cannot be null or empty.");
     }
 
-    protected async override Task<HandlerResult> ProcessAsync(ResourceShareContext context)
+    protected override async Task<HandlerResult> ProcessAsync(ResourceShareContext context)
     {
         context.ResourceVectors = await GetVectors(context.Summary);
         
