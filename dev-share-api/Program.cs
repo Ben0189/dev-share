@@ -1,8 +1,6 @@
-using Microsoft.OpenApi.Models;
-
-
 var builder = WebApplication.CreateBuilder(args);
 
+// Configuration
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json", false, true)
@@ -13,27 +11,14 @@ builder.Configuration
 // Load secrets in development before building
 if (builder.Environment.IsDevelopment()) builder.Configuration.AddUserSecrets<Program>();
 
-// Add services to container
+// Service Registration
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Your API", Version = "v1" });
-});
-
-// cors
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins("http://localhost:3000",
-                "https://dev-share-ui-hce9cxaxacc8fahu.australiaeast-01.azurewebsites.net")
-            .AllowAnyHeader()
-            .AllowAnyMethod();
-    });
-});
-
-builder.Services.AddApplicationServices(builder.Configuration);
+builder.Services
+    .AddSwaggerConfiguration()
+    .AddCorsConfiguration()
+    .AddInfrastructureServices(builder.Configuration)
+    .AddApplicationServices();
 
 var app = builder.Build();
 
@@ -42,8 +27,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-
 
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
