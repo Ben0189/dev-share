@@ -10,13 +10,15 @@ using Services;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration config)
+    public static IServiceCollection AddInfrastructureServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
         // Config sections
-        var openAiConfig = config.GetSection("OpenAI");
-        var qdrantConfig = config.GetSection("Qdrant");
+        var openAiConfig = configuration.GetSection("OpenAI");
+        var qdrantConfig = configuration.GetSection("Qdrant");
 
-        // Qdrant client
+        // Qdrant Client
         services.AddSingleton<QdrantClient>(_ =>
         {
             var channel = QdrantChannel.ForAddress(
@@ -26,56 +28,71 @@ public static class DependencyInjection
             return new QdrantClient(new QdrantGrpcClient(channel));
         });
 
-        // OpenAI client
+        // OpenAI Client
         services.AddSingleton<AzureOpenAIClient>(_ =>
         {
             var apiKey = openAiConfig["ApiKey"]
                          ?? throw new InvalidOperationException("OpenAI:ApiKey is missing");
             var endpoint = openAiConfig["Endpoint"]
-                           ?? throw new InvalidOperationException("OpenAI:Endpoint is missing");
+                         ?? throw new InvalidOperationException("OpenAI:Endpoint is missing");
             return new AzureOpenAIClient(new Uri(endpoint), new ApiKeyCredential(apiKey));
         });
 
+        // Database
+        services.AddDbContext<DevShareDbContext>(options =>
+            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
-        services.AddHttpClient("FastEmbed",
-        client =>
+        // HTTP Client
+        services.AddHttpClient("FastEmbed", client =>
         {
             client.BaseAddress = new Uri("https://python-ai-model-acgfbgfbffb0fyav.australiaeast-01.azurewebsites.net");
         });
 
-        // Application services
-        services.AddScoped<IVectorService>(sp =>
-        {
-            var qdrantClient = sp.GetRequiredService<QdrantClient>();
-            return new VectorService(qdrantClient);
-        });
+        return services;
+    }
 
-        services.AddScoped<IEmbeddingService>(sp =>
-        {
-            var openAiClient = sp.GetRequiredService<AzureOpenAIClient>();
-            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
-            return new EmbeddingService(openAiClient, httpClientFactory);
-        });
-
-        services.AddScoped<ISummaryService>(sp =>
-            {
-                var openAiClient = sp.GetRequiredService<AzureOpenAIClient>();
-                return new SummaryService(openAiClient);
-            });
-        
-        
-        // Sql Server
-        services.AddDbContext<DevShareDbContext>(options =>
-            options.UseSqlServer(config.GetConnectionString("DefaultConnection")));
-
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    {
         //Not allowed to alter the sort of the following code. 
         services.AddScoped<ShareChainExecutor>();
         services.AddScoped<IShareChainHandle, SummarizeShareChainHandle>();
         services.AddScoped<IShareChainHandle, EmbeddingShareChainHandle>();
         services.AddScoped<IShareChainHandle, DatabaseShareChainHandle>();
 
+        // Application Services
+        services.AddScoped<IEmbeddingService, EmbeddingService>();
+        services.AddScoped<IVectorService, VectorService>();
+        services.AddScoped<ISummaryService, SummaryService>();
         services.AddScoped<IResourceService, ResourceService>();
         services.AddScoped<IUserInsightService, UserInsightService>();
+
+        return services;
+    }
+    
+    public static IServiceCollection AddSwaggerConfiguration(this IServiceCollection services)
+    {
+        services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "DevShare API", Version = "v1" });
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddCorsConfiguration(this IServiceCollection services)
+    {
+        services.AddCors(options =>
+        {
+            options.AddPolicy("AllowFrontend", policy =>
+            {
+                policy.WithOrigins(
+                    "http://localhost:3000",
+                    "https://dev-share-ui-hce9cxaxacc8fahu.australiaeast-01.azurewebsites.net"
+                )
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+            });
+        });
 
         return services;
     }
