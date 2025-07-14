@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Particles } from '@/components/magicui/particles';
 import { useTheme } from 'next-themes';
+import { useRouter } from 'next/navigation';
 
 interface HeroSectionProps {
   onSearch: (query: string) => void;
@@ -20,7 +21,7 @@ export default function HeroSection({
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const { resolvedTheme } = useTheme();
   const [color, setColor] = useState('#ffffff');
-
+  const router = useRouter();
   useEffect(() => {
     setColor(resolvedTheme === 'dark' ? '#ffffff' : '#000000');
   }, [resolvedTheme]);
@@ -46,18 +47,19 @@ export default function HeroSection({
     e.preventDefault();
     if (query.trim()) {
       onSearch(query);
+      router.push(`/result`);
     }
   };
 
   return (
-    <section className="w-full py-10 md:py-10 bg-background border-b">
+    <section className="w-full bg-background">
       <Particles
         className="absolute inset-0 z-0"
         ease={80}
         color={color}
         refresh
       />
-      <div className="container px-4 py-11 mx-auto max-w-7xl">
+      <div className="container px-4 mx-auto max-w-7xl">
         <div className="flex flex-col gap-8 py-10">
           <div className="flex flex-row items-center justify-center w-full mb-2">
             <div className="flex flex-col gap-6 ">
