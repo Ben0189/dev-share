@@ -22,12 +22,16 @@ public class ExtractController : ControllerBase
     private readonly IEmbeddingService _embeddingService;
     private readonly IVectorService _vectorService;
     private readonly ShareChainExecutor _shareChainExecutor;
+    private readonly IUserInsightService _userInsightService;
+    private readonly IResourceService _resourceService;
     private static readonly ConcurrentDictionary<string, ShareTask> TaskStore = new();
 
     public ExtractController(
         ISummaryService summaryService,
         IEmbeddingService embeddingService,
         IVectorService vectorService,
+        IUserInsightService _userInsightService;
+        IResourceService _resourceService;
         ShareChainExecutor shareChainExecutor)
     {
         _summaryService = summaryService;
@@ -118,7 +122,7 @@ public class ExtractController : ControllerBase
     }
 
     [HttpPost("search")]
-    public async Task<ActionResult<float[]>> Search([FromBody] SearchRequest request)
+    public async Task<List<ResourceDTO>> Search([FromBody] SearchRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Text))
         {
@@ -132,15 +136,25 @@ public class ExtractController : ControllerBase
             //1.gen prompt embedding
             var denseEmbedding = await _embeddingService.GetDenseEmbeddingAsync(request.Text);
             var (indices, values) = await _embeddingService.GetSparseEmbeddingAsync(request.Text);
-
+                       
             //2.search prompt and get result(content and comment)
-            var ContentResults;
+            var ContentResults = await _vectorService.SearchEmbeddingAsync(denseQueryVector: denseEmbedding, sparseIndices: indices, sparseValues: values, topK: request.TopRelatives);
+            //todo
             var InsightResults;
+
             //3. do rerank and get reranked list
             var rerankResults = GetRerankedList(ContentResults,InsightResults);
+
             //4. get　finalResults from sql server by id
-
-
+            var results = new List<ResourceDTO>();
+            foreach(var item in reranResults)
+            {
+                var contentId = item.ContentId;
+                var resource = await _resourceService.GetResourceById(contentId);
+                if(resource != null){
+                    results.Add(resource);
+                }
+            }
             return Ok(results);
         }
         catch (Exception ex)
