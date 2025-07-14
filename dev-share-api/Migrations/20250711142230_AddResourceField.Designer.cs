@@ -3,6 +3,7 @@ using Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace dev_share_api.Migrations
 {
     [DbContext(typeof(DevShareDbContext))]
-    partial class DevShareDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250711142230_AddResourceField")]
+    partial class AddResourceField
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -72,26 +75,7 @@ namespace dev_share_api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ResourceId");
-
                     b.ToTable("UserInsights");
-                });
-
-            modelBuilder.Entity("Entities.UserInsight", b =>
-                {
-                    b.HasOne("Entities.Resource", "Resource")
-                        .WithMany("UserInsights")
-                        .HasForeignKey("ResourceId")
-                        .HasPrincipalKey("ResourceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Resource");
-                });
-
-            modelBuilder.Entity("Entities.Resource", b =>
-                {
-                    b.Navigation("UserInsights");
                 });
 #pragma warning restore 612, 618
         }
