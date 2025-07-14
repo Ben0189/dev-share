@@ -14,11 +14,12 @@ public interface IVectorService
     Task<List<VectorResourceDto>> SearchResourceAsync(string query, int topK);
     Task<List<VectorInsightDto>> SearchInsightAsync(string query, int topK);
 }
+
 public class VectorService : IVectorService
 {
     private readonly QdrantClient _client;
-    private readonly string _resourceCollection = "blotz-resource";
-    private readonly string _insightCollection = "blotz-insight";
+    private readonly string _resourceCollection = "BlotzShare_Resource";
+    private readonly string _insightCollection = "BlotzShare_Insight";
     private readonly ulong _dimensions = 384;
     private readonly IEmbeddingService _embeddingService;
 
