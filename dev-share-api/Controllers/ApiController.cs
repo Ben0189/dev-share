@@ -122,11 +122,11 @@ public class ExtractController : ControllerBase
     }
 
     [HttpPost("search")]
-    public async Task<List<ResourceDto>> Search([FromBody] SearchRequest request)
+    public async Task<IActionResult> Search([FromBody] SearchRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Text))
         {
-            return BadRequest("Search text cannot be empty.");
+            return BadRequest(new { message = "Search text cannot be empty." });
         }
         if (request.TopRelatives <= 0 || request.TopRelatives > 100)
             return BadRequest("TopRelatives must be between 1 and 100.");
@@ -141,32 +141,34 @@ public class ExtractController : ControllerBase
             var insightResults = await _vectorService.SearchInsightAsync(
                 query: request.Text,
                 topK: request.TopRelatives);
-            
 
-            if (resourceResults == null 
-                || resourceResults.Count == 0 
-                || insightResults == null 
+
+            if (resourceResults == null
+                || resourceResults.Count == 0
+                || insightResults == null
                 || insightResults.Count == 0)
             {
                 // Fallback to online research
                 var onlineResult = await _onlineResearchService.PerformOnlineResearchAsync(request.Text);
                 return Ok(new { source = "online", result = onlineResult });
-            }else{
-
+            }
+            else
+            {
                 //2. do rerank and get reranked list
-                var rerankResults = GetRerankedList(resourceResults,insightResults);
+                var rerankResults = GetRerankedList(resourceResults, insightResults);
 
                 //3. get　finalResults from sql server by id
                 var results = new List<ResourceDto>();
-                foreach(var item in reranResults)
+                foreach (var item in rerankResults)
                 {
                     var contentId = item.ContentId;
-                    var resource = await _resourceService.GetResourceById(contentId);
-                    if(resource != null){
+                    var resource = await _resourceService.GetResourceById(long.Parse(contentId));
+                    if (resource != null)
+                    {
                         results.Add(resource);
                     }
                 }
-                return Ok(new { source = "vector", result = resourceResults });
+                return Ok(new { source = "vector", result = results });
             }
         }
         catch (Exception ex)
@@ -174,7 +176,7 @@ public class ExtractController : ControllerBase
             return StatusCode(500, "Search failed due to an internal error.");
         }
     }
- 
+
 
     [HttpPost("vector/init")]
     public async Task<ActionResult<float[]>> InitVectorDB()
@@ -214,7 +216,7 @@ public class ExtractController : ControllerBase
         return Ok();
     }
 
-    
+
 
     private string? TryHtmlAgilityPack(string url)
     {
@@ -273,20 +275,20 @@ public class ExtractController : ControllerBase
         var text = await page.EvalOnSelectorAllAsync<string[]>("p", "els => els.map(e => e.innerText).filter(t => t.trim().length > 0)");
         return string.Join("\n", text);
     }
-    
+
     //todo make sure the return data from service is List<Content> and List<Comment>
-    public List<Rerank> GetRerankedList(List<ResourceDto> contents, List<UserInsightDto> comments)
+    private static List<Rerank> GetRerankedList(List<VectorResourceDto> resources, List<VectorInsightDto> insights)
     {
         // averge comment.score
-        var commentGroups = comments
-            .GroupBy(c => c.ContentId)
+        var commentGroups = insights
+            .GroupBy(c => c.ResourceId)
             .ToDictionary(
                 g => g.Key,
                 g => g.Average(c => c.Score)
             );
 
         // content.score find table
-        var contentScores = contents
+        var contentScores = resources
             .ToDictionary(c => c.Id, c => c.Score);
 
         // union all contentId
@@ -298,7 +300,7 @@ public class ExtractController : ControllerBase
             .Select(id => new Rerank
             {
                 ContentId = id,
-                Score = 
+                Score =
                     (contentScores.TryGetValue(id, out var cScore) ? cScore : 0) * 0.7 +
                     (commentGroups.TryGetValue(id, out var comAvg) ? comAvg : 0) * 0.3
             })

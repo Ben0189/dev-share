@@ -23,36 +23,39 @@ public class DatabaseShareChainHandle : BaseShareChainHandle
 
     protected override async Task<HandlerResult> ProcessAsync(ResourceShareContext context)
     {
-        var resourceId = IdGeneratorUtil.GetNextId().ToString();
+        var resourceId = IdGeneratorUtil.GetNextId();
 
         if (context.ExistingResource == null)
         {
             await _vectorService.UpsertResourceAsync(
                 context.Url!,
-                resourceId,
+                resourceId.ToString(),
                 context.Summary!,
                 context.ResourceVectors!);
-            
+
             await _resourceService.AddResourceAsync(
-            new ResourceDto{
-                ResourceId = resourceId,
-                Content = context.Summary,
-                Url = context.Url
-            });
+                new ResourceDto
+                {
+                    ResourceId = resourceId,
+                    Content = context.Summary,
+                    Url = context.Url
+                });
         }
 
         await _vectorService.UpsertInsightAsync(
             IdGeneratorUtil.GetNextId().ToString(),
             context.Url!,
             context.Insight!,
-            resourceId,
+            resourceId.ToString(),
             context.InsightVectors!);
+
         await _userInsightService.AddUserInsightAsync(
-            new UserInsightDto{
+            new UserInsightDto
+            {
                 ResourceId = resourceId,
                 Content = context.Insight
             });
-        
+
         return HandlerResult.Success();
     }
 }
