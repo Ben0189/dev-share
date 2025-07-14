@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Particles } from '@/components/magicui/particles';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
+import SearchBar from './SearchBar';
 
 interface HeroSectionProps {
   onSearch: (query: string) => void;
@@ -71,7 +72,7 @@ export default function HeroSection({
               </p>
             </div>
           </div>
-          <form onSubmit={handleSubmit} className="flex w-full space-x-2">
+          {/* <form onSubmit={handleSubmit} className="flex w-full space-x-2">
             <div className="relative flex-1 flex items-center justify-center">
               <Search className="relative left-8 text-muted-foreground" />
               <Input
@@ -83,7 +84,8 @@ export default function HeroSection({
                 disabled={isSearching}
               />
             </div>
-          </form>
+          </form> */}
+          <SearchBar />
         </div>
       </div>
     </section>
