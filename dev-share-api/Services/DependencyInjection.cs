@@ -65,6 +65,7 @@ public static class DependencyInjection
         services.AddScoped<ISummaryService, SummaryService>();
         services.AddScoped<IResourceService, ResourceService>();
         services.AddScoped<IUserInsightService, UserInsightService>();
+        services.AddScoped<IOnlineResearchService, OnlineResearchService>();
 
         return services;
     }

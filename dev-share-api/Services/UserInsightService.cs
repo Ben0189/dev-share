@@ -14,7 +14,7 @@ public class UserInsightService : IUserInsightService
         _dbContext = dbContext;
     }
 
-    public async Task AddUserInsightAsync(UserInsightDTO userInsight)
+    public async Task AddUserInsightAsync(UserInsightDto userInsight)
     {
         _dbContext.UserInsights.Add(new UserInsight
         {
@@ -24,11 +24,11 @@ public class UserInsightService : IUserInsightService
         await _dbContext.SaveChangesAsync();
     }
 
-    public async Task<List<UserInsightDTO>> GetUserInsight(long resourceId)
+    public async Task<List<UserInsightDto>> GetUserInsight(long resourceId)
     {
         return await _dbContext.UserInsights
             .Where(insight => insight.ResourceId == resourceId)
-            .Select(insight => new UserInsightDTO
+            .Select(insight => new UserInsightDto
             {
                 ResourceId = insight.ResourceId,
                 Content = insight.Content
