@@ -28,9 +28,9 @@ public class ExtractController : ControllerBase
         ISummaryService summaryService,
         IEmbeddingService embeddingService,
         IVectorService vectorService,
-        IUserInsightService _userInsightService;
-        IResourceService _resourceService;
-        ShareChainExecutor shareChainExecutor)
+        IUserInsightService _userInsightService,
+        IResourceService _resourceService,
+        ShareChainExecutor shareChainExecutor,
         OnlineResearchService onlineResearchService)
     {
         _summaryService = summaryService;
@@ -122,7 +122,7 @@ public class ExtractController : ControllerBase
     }
 
     [HttpPost("search")]
-    public async Task<List<ResourceDTO>> Search([FromBody] SearchRequest request)
+    public async Task<List<ResourceDto>> Search([FromBody] SearchRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Text))
         {
@@ -133,35 +133,48 @@ public class ExtractController : ControllerBase
 
         try
         {
-            //1.gen prompt embedding
-            var denseEmbedding = await _embeddingService.GetDenseEmbeddingAsync(request.Text);
-            var (indices, values) = await _embeddingService.GetSparseEmbeddingAsync(request.Text);
-                       
-            //2.search prompt and get result(content and comment)
-            var ContentResults = await _vectorService.SearchEmbeddingAsync(denseQueryVector: denseEmbedding, sparseIndices: indices, sparseValues: values, topK: request.TopRelatives);
-            //todo
-            var InsightResults;
+            //get vectordb data results
+            var resourceResults = await _vectorService.SearchResourceAsync(
+                query: request.Text,
+                topK: request.TopRelatives);
 
-            //3. do rerank and get reranked list
-            var rerankResults = GetRerankedList(ContentResults,InsightResults);
+            var insightResults = await _vectorService.SearchInsightAsync(
+                query: request.Text,
+                topK: request.TopRelatives);
+            
 
-            //4. get　finalResults from sql server by id
-            var results = new List<ResourceDTO>();
-            foreach(var item in reranResults)
+            if (resourceResults == null 
+                || resourceResults.Count == 0 
+                || insightResults == null 
+                || insightResults.Count == 0)
             {
-                var contentId = item.ContentId;
-                var resource = await _resourceService.GetResourceById(contentId);
-                if(resource != null){
-                    results.Add(resource);
+                // Fallback to online research
+                var onlineResult = await _onlineResearchService.PerformOnlineResearchAsync(request.Text);
+                return Ok(new { source = "online", result = onlineResult });
+            }else{
+
+                //2. do rerank and get reranked list
+                var rerankResults = GetRerankedList(resourceResults,insightResults);
+
+                //3. get　finalResults from sql server by id
+                var results = new List<ResourceDto>();
+                foreach(var item in reranResults)
+                {
+                    var contentId = item.ContentId;
+                    var resource = await _resourceService.GetResourceById(contentId);
+                    if(resource != null){
+                        results.Add(resource);
+                    }
                 }
+                return Ok(new { source = "vector", result = resourceResults });
             }
-            return Ok(results);
         }
         catch (Exception ex)
         {
             return StatusCode(500, "Search failed due to an internal error.");
         }
     }
+ 
 
     [HttpPost("vector/init")]
     public async Task<ActionResult<float[]>> InitVectorDB()
@@ -201,43 +214,7 @@ public class ExtractController : ControllerBase
         return Ok();
     }
 
-    [HttpPost("search")]
-    public async Task<IActionResult> Search([FromBody] SearchRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(request.Text))
-        {
-            return BadRequest("Search text cannot be empty.");
-        }
-        if (request.TopRelatives <= 0 || request.TopRelatives > 100)
-            return BadRequest("TopRelatives must be between 1 and 100.");
-
-        try
-        {
-            var resourceResults = await _vectorService.SearchResourceAsync(
-                query: request.Text,
-                topK: request.TopRelatives);
-
-            var insightResults = await _vectorService.SearchInsightAsync(
-                query: request.Text,
-                topK: request.TopRelatives);
-
-            if (resourceResults == null 
-                || resourceResults.Count == 0 
-                || insightResults == null 
-                || insightResults.Count == 0)
-            {
-                // Fallback to online research
-                var onlineResult = await _onlineResearchService.PerformOnlineResearchAsync(request.Text);
-                return Ok(new { source = "online", result = onlineResult });
-            }
-
-            return Ok(new { source = "vector", result = resourceResults });
-        }
-        catch (Exception)
-        {
-            return StatusCode(500, "Search failed due to an internal error.");
-        }
-    }
+    
 
     private string? TryHtmlAgilityPack(string url)
     {
@@ -298,7 +275,7 @@ public class ExtractController : ControllerBase
     }
     
     //todo make sure the return data from service is List<Content> and List<Comment>
-    public List<Rerank> GetRerankedList(List<Content> contents, List<Comment> comments)
+    public List<Rerank> GetRerankedList(List<ResourceDto> contents, List<UserInsightDto> comments)
     {
         // averge comment.score
         var commentGroups = comments
