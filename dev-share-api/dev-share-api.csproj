@@ -20,8 +20,9 @@
     <PackageReference Include="Microsoft.Extensions.AI" Version="9.5.0" />
     <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="9.5.0-preview.1.25265.7" />
     <PackageReference Include="Microsoft.Playwright" Version="1.52.0" />
-    <PackageReference Include="Azure.AI.OpenAI" Version="2.1.0" />
+    <PackageReference Include="Azure.AI.OpenAI" Version="2.2.0-beta.4" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="OpenAI" Version="2.2.0" />
     <PackageReference Include="Qdrant.Client" Version="1.14.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.2" />
   </ItemGroup>

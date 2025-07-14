@@ -1,3 +1,4 @@
 dev-share-api/appsettings.local.json
 .vs/
-python-embedding/__pycache__/embedding_service.cpython-313.pyc
+python-embedding/__pycache__/
+.vscode/

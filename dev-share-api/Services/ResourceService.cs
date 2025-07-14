@@ -13,7 +13,7 @@ public class ResourceService : IResourceService
         _dbContext = dbContext;
     }
 
-    public async Task AddResourceAsync(ResourceDTO resourceDto)
+    public async Task AddResourceAsync(ResourceDto resourceDto)
     {
         resourceDto.NormalizeUrl = UrlManageUtil.NormalizeUrl(resourceDto.Url);
         _dbContext.Resources.Add(new Resource
@@ -26,11 +26,11 @@ public class ResourceService : IResourceService
         await _dbContext.SaveChangesAsync();
     }
 
-    public async Task<ResourceDTO?> GetResourceByUrl(string normalizeUrl)
+    public async Task<ResourceDto?> GetResourceByUrl(string normalizeUrl)
     {
         return await _dbContext.Resources
             .Where(resource => resource.Url == normalizeUrl)
-            .Select(resource => new ResourceDTO
+            .Select(resource => new ResourceDto
             {
                 ResourceId = resource.ResourceId,
                 Url = resource.Url,
@@ -39,18 +39,18 @@ public class ResourceService : IResourceService
             }).FirstOrDefaultAsync();
     }
     
-    public async Task<ResourceDTO?> GetResourceById(long resourceId)
+    public async Task<ResourceDto?> GetResourceById(long resourceId)
     {
         return await _dbContext.Resources
             .Where(resource => resource.ResourceId == resourceId)
-            .Select(resource => new ResourceDTO
+            .Select(resource => new ResourceDto
             {
                 ResourceId = resource.ResourceId,
                 Url = resource.Url,
                 NormalizeUrl = resource.NormalizeUrl,
                 Content = resource.Content,
                 UserInsights = resource.UserInsights
-                    .Select(insight => new UserInsightDTO
+                    .Select(insight => new UserInsightDto
                     {
                         ResourceId = insight.ResourceId,
                         Content = insight.Content
