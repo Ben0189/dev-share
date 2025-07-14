@@ -32,10 +32,10 @@ public class ShareChainExecutor
 
     private async void preHandle(ResourceShareContext context)
     {
-        ResourceDTO resourceDto = await _resourceService.GetResourceByUrl(UrlManageUtil.NormalizeUrl(context.Url));
+        ResourceDto resourceDto = await _resourceService.GetResourceByUrl(UrlManageUtil.NormalizeUrl(context.Url));
         if (resourceDto != null)
         {
-            context.ExistingResource = new ResourceDTO()
+            context.ExistingResource = new ResourceDto()
             {
                 ResourceId = resourceDto.ResourceId,
                 Url = resourceDto.Url,

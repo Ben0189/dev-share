@@ -4,7 +4,7 @@ namespace Services;
 
 public interface IUserInsightService
 {
-    public Task AddUserInsightAsync(UserInsightDTO userInsight);
+    public Task AddUserInsightAsync(UserInsightDto userInsight);
 
-    public Task<List<UserInsightDTO>> GetUserInsight(long resourceId);
+    public Task<List<UserInsightDto>> GetUserInsight(long resourceId);
 }

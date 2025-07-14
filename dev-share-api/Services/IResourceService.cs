@@ -4,10 +4,10 @@ namespace Services;
 
 public interface IResourceService
 {
-    public Task AddResourceAsync(ResourceDTO resourceDto);
+    public Task AddResourceAsync(ResourceDto resourceDto);
 
-    public Task<ResourceDTO?> GetResourceByUrl(string normalizeUrl);
+    public Task<ResourceDto?> GetResourceByUrl(string normalizeUrl);
     
-    public Task<ResourceDTO> GetResourceById(long resourceId); 
+    public Task<ResourceDto> GetResourceById(long resourceId); 
     
 }

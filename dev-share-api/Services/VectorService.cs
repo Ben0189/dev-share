@@ -11,8 +11,8 @@ public interface IVectorService
     Task<UpdateResult> IndexingAsync(string collectionName, string fieldName);
     Task UpsertResourceAsync(string id, string url, string Content, Dictionary<string, Vector> vectors);
     Task UpsertInsightAsync(string id, string url, string Content, string resourceId, Dictionary<string, Vector> vectors);
-    Task<List<ResourceDto>> SearchResourceAsync(string query, int topK);
-    Task<List<InsightDto>> SearchInsightAsync(string query, int topK);
+    Task<List<VectorResourceDto>> SearchResourceAsync(string query, int topK);
+    Task<List<VectorInsightDto>> SearchInsightAsync(string query, int topK);
 }
 public class VectorService : IVectorService
 {
@@ -130,7 +130,7 @@ public class VectorService : IVectorService
         await _client.UpsertAsync(_insightCollection, new List<PointStruct> { point });
     }
 
-    public async Task<List<ResourceDto>> SearchResourceAsync(string query, int topK)
+    public async Task<List<VectorResourceDto>> SearchResourceAsync(string query, int topK)
     {
         // Hybrid search on resource collection
         var denseQueryVector = await _embeddingService.GetDenseEmbeddingAsync(query);
@@ -157,7 +157,7 @@ public class VectorService : IVectorService
         return resourceResults.Select(result =>
         {
             var payload = result.Payload;
-            return new ResourceDto
+            return new VectorResourceDto
             {
                 Id = result.Id.ToString(),
                 Url = payload.TryGetValue("url", out var urlVal) && urlVal.KindCase == Value.KindOneofCase.StringValue ? urlVal.StringValue : string.Empty,
@@ -167,7 +167,7 @@ public class VectorService : IVectorService
         }).ToList();
     }
 
-    public async Task<List<InsightDto>> SearchInsightAsync(string query, int topK)
+    public async Task<List<VectorInsightDto>> SearchInsightAsync(string query, int topK)
     {
         var denseQueryVector = await _embeddingService.GetDenseEmbeddingAsync(query);
         var (sparseIndices, sparseValues) = await _embeddingService.GetSparseEmbeddingAsync(query);
@@ -193,7 +193,7 @@ public class VectorService : IVectorService
         return insightResults.Select(result =>
         {
             var payload = result.Payload;
-            return new InsightDto
+            return new VectorInsightDto
             {
                 Id = result.Id.ToString(),
                 Url = payload.TryGetValue("url", out var urlVal) && urlVal.KindCase == Value.KindOneofCase.StringValue ? urlVal.StringValue : string.Empty,
