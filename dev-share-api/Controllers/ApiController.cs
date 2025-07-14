@@ -21,7 +21,7 @@ public class ExtractController : ControllerBase
     private readonly ShareChainExecutor _shareChainExecutor;
     private readonly IUserInsightService _userInsightService;
     private readonly IResourceService _resourceService;
-    private readonly OnlineResearchService _onlineResearchService;
+    private readonly IOnlineResearchService _onlineResearchService;
     private static readonly ConcurrentDictionary<string, ShareTask> TaskStore = new();
 
     public ExtractController(
@@ -31,7 +31,7 @@ public class ExtractController : ControllerBase
         IUserInsightService _userInsightService,
         IResourceService _resourceService,
         ShareChainExecutor shareChainExecutor,
-        OnlineResearchService onlineResearchService)
+        IOnlineResearchService onlineResearchService)
     {
         _summaryService = summaryService;
         _embeddingService = embeddingService;
@@ -149,7 +149,7 @@ public class ExtractController : ControllerBase
                 || insightResults.Count == 0)
             {
                 // Fallback to online research
-                var onlineResult = await _onlineResearchService.PerformOnlineResearchAsync(request.Text);
+                var onlineResult = await _onlineResearchService.PerformOnlineResearchAsync(request.Text,3);
                 return Ok(new { source = "online", result = onlineResult });
             }
             else

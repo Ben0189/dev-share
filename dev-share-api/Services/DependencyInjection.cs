@@ -40,7 +40,11 @@ public static class DependencyInjection
 
         // Database
         services.AddDbContext<DevShareDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+        {
+            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+            Console.Write("database");
+        });
+           
 
         // HTTP Client
         services.AddHttpClient("FastEmbed", client =>

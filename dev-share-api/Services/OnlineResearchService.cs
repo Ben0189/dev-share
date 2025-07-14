@@ -15,7 +15,7 @@ public class OnlineResearchService : IOnlineResearchService
 {
     private readonly AzureOpenAIClient _client;
     private readonly string _deploymentName = "gpt-4o-mini"; // Set this to your deployment name
-    private readonly ILogger<OnlineResearchService> _logger;
+    // private readonly ILogger<OnlineResearchService> _logger;
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -23,11 +23,12 @@ public class OnlineResearchService : IOnlineResearchService
     };
 
     public OnlineResearchService(
-        AzureOpenAIClient openAIClient,
-        ILogger<OnlineResearchService> logger)
+        AzureOpenAIClient openAIClient
+        // ILogger<OnlineResearchService> logger
+        )
     {
         _client = openAIClient ?? throw new ArgumentNullException(nameof(openAIClient));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        // _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<IEnumerable<VectorResourceDto>> PerformOnlineResearchAsync(string query, int topK = 3)
@@ -44,7 +45,7 @@ public class OnlineResearchService : IOnlineResearchService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error performing online research for query: {Query}", query);
+            // _logger.LogError(ex, "Error performing online research for query: {Query}", query);
             throw;
         }
     }
@@ -86,7 +87,7 @@ public class OnlineResearchService : IOnlineResearchService
         }
         catch (JsonException ex)
         {
-            _logger.LogWarning(ex, "Failed to parse OpenAI response: {Response}", response);
+            // _logger.LogWarning(ex, "Failed to parse OpenAI response: {Response}", response);
             return new[] { CreateFallbackDto(response) };
         }
     }

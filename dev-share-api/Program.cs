@@ -9,7 +9,7 @@ builder.Configuration
 
 // optional - if you don't want to have 'appsettings.local.json' for debugging purpose
 // Load secrets in development before building
-if (builder.Environment.IsDevelopment()) builder.Configuration.AddUserSecrets<Program>();
+// if (builder.Environment.IsDevelopment()) builder.Configuration.AddUserSecrets<Program>();
 
 // Service Registration
 builder.Services.AddControllers();
