@@ -59,6 +59,7 @@ public static class DependencyInjection
     {
         //Not allowed to alter the sort of the following code. 
         services.AddScoped<ShareChainExecutor>();
+        services.AddScoped<IShareChainHandle, ExtractShareChainHandle>();
         services.AddScoped<IShareChainHandle, SummarizeShareChainHandle>();
         services.AddScoped<IShareChainHandle, EmbeddingShareChainHandle>();
         services.AddScoped<IShareChainHandle, DatabaseShareChainHandle>();

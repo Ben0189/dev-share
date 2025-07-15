@@ -29,7 +29,7 @@ public class ResourceService : IResourceService
     public async Task<ResourceDto?> GetResourceByUrl(string normalizeUrl)
     {
         return await _dbContext.Resources
-            .Where(resource => resource.Url == normalizeUrl)
+            .Where(resource => resource.NormalizeUrl == normalizeUrl)
             .Select(resource => new ResourceDto
             {
                 ResourceId = resource.ResourceId,

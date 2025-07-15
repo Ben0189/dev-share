@@ -1,3 +1,4 @@
+using System.Text;
 using Models;
 
 namespace Services;
@@ -25,7 +26,13 @@ public class SummarizeShareChainHandle : BaseShareChainHandle
 
     protected override async Task<HandlerResult> ProcessAsync(ResourceShareContext context)
     {
-        var summary = await _summaryService.SummarizeAsync(context.Prompt);
+        var prompt = new StringBuilder()
+            .AppendLine("You will receive an input text and your task is to summarize the article in no more than 100 words.")
+            .AppendLine("Only return the summary. Do not include any explanation.")
+            .AppendLine("# Article content:")
+            .AppendLine($"{context.ExtractResult}")
+            .ToString();
+        var summary = await _summaryService.SummarizeAsync(prompt);
         context.Summary = summary;
         return HandlerResult.Success();
     }

@@ -9,8 +9,7 @@ public class ResourceShareContext
     public string? Summary { get; set; }
     public Dictionary<string, Vector>? ResourceVectors { get; set; }
     public Dictionary<string, Vector>? InsightVectors { get; set; }
-    public string? Prompt { get; set; }
     public ResourceDto? ExistingResource { get; set; }
-
-
+    public string? ExtractResult { get; set; }
+    
 }

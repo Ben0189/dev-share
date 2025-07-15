@@ -17,7 +17,7 @@ public class ShareChainExecutor
 
     public async Task ExecuteAsync(ResourceShareContext context)
     {
-        preHandle(context);
+        await preHandle(context);
         foreach (var handler in _handlers)
         {
             // Check if the handler should be skipped
@@ -30,7 +30,7 @@ public class ShareChainExecutor
         }
     }
 
-    private async void preHandle(ResourceShareContext context)
+    private async Task preHandle(ResourceShareContext context)
     {
         ResourceDto resourceDto = await _resourceService.GetResourceByUrl(UrlManageUtil.NormalizeUrl(context.Url));
         if (resourceDto != null)
