@@ -1,5 +1,4 @@
 using Azure.AI.OpenAI;
-using Microsoft.Extensions.Options;
 using System.Text.Json;
 using Models;
 using OpenAI.Chat;

@@ -76,7 +76,7 @@ public class ExtractController : ControllerBase
                     await executor.ExecuteAsync(new ResourceShareContext
                     {
                         Url = url,
-                        Insight = request.Comment
+                        Insight = request.Insight
                     });
 
                     task.Status = "success";
@@ -135,7 +135,7 @@ public class ExtractController : ControllerBase
                 || insightResults.Count == 0)
             {
                 // Fallback to online research
-                var onlineResult = await _onlineResearchService.PerformOnlineResearchAsync(request.Text,3);
+                var onlineResult = await _onlineResearchService.PerformOnlineResearchAsync(request.Text, 3);
                 return Ok(new { source = "online", result = onlineResult });
             }
             else
@@ -147,8 +147,8 @@ public class ExtractController : ControllerBase
                 var results = new List<ResourceDto>();
                 foreach (var item in rerankResults)
                 {
-                    var contentId = item.ContentId;
-                    var obj = JObject.Parse(contentId);
+                    var resourceId = item.ResourceId;
+                    var obj = JObject.Parse(resourceId);
                     var resource = await _resourceService.GetResourceById(long.Parse(obj["num"].ToString()));
                     if (resource != null)
                     {
@@ -203,11 +203,11 @@ public class ExtractController : ControllerBase
         return Ok();
     }
 
-    //todo make sure the return data from service is List<Content> and List<Comment>
+    //todo make sure the return data from service is List<Resource> and List<Insight>
     private static List<Rerank> GetRerankedList(List<VectorResourceDto> resources, List<VectorInsightDto> insights)
     {
         // averge comment.score
-        var commentGroups = insights
+        var insightGroups = insights
             .GroupBy(c => c.ResourceId)
             .ToDictionary(
                 g => g.Key,
@@ -215,21 +215,21 @@ public class ExtractController : ControllerBase
             );
 
         // content.score find table
-        var contentScores = resources
+        var resourceScores = resources
             .ToDictionary(c => c.Id, c => c.Score);
 
         // union all contentId
-        var allContentIds = contentScores.Keys
-            .Union(commentGroups.Keys)
+        var allResourceIds = resourceScores.Keys
+            .Union(insightGroups.Keys)
             .Distinct();
 
-        var result = allContentIds
+        var result = allResourceIds
             .Select(id => new Rerank
             {
-                ContentId = id,
+                ResourceId = id,
                 Score =
-                    (contentScores.TryGetValue(id, out var cScore) ? cScore : 0) * 0.7 +
-                    (commentGroups.TryGetValue(id, out var comAvg) ? comAvg : 0) * 0.3
+                    (resourceScores.TryGetValue(id, out var rScore) ? rScore : 0) * 0.7 +
+                    (insightGroups.TryGetValue(id, out var iAvg) ? iAvg : 0) * 0.3
             })
             .OrderByDescending(r => r.Score)
             .ToList();

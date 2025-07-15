@@ -1,7 +1,6 @@
 using Models;
 using Qdrant.Client;
 using Qdrant.Client.Grpc;
-using static Qdrant.Client.Grpc.Conditions;
 
 namespace Services;
 
@@ -160,7 +159,7 @@ public class VectorService : IVectorService
             var payload = result.Payload;
             return new VectorResourceDto
             {
-                Id = result.Id.ToString(),
+                Id = result.Id.Num.ToString(),
                 Url = payload.TryGetValue("url", out var urlVal) && urlVal.KindCase == Value.KindOneofCase.StringValue ? urlVal.StringValue : string.Empty,
                 Content = payload.TryGetValue("content", out var contentVal) && contentVal.KindCase == Value.KindOneofCase.StringValue ? contentVal.StringValue : string.Empty,
                 Score = result.Score
@@ -182,7 +181,7 @@ public class VectorService : IVectorService
 
 
         var insightResults = await _client.QueryAsync(
-            collectionName: _resourceCollection,
+            collectionName: _insightCollection,
             prefetch: prefetch,
             query: Fusion.Rrf,
             limit: (ulong)topK,
@@ -196,7 +195,7 @@ public class VectorService : IVectorService
             var payload = result.Payload;
             return new VectorInsightDto
             {
-                Id = result.Id.ToString(),
+                Id = result.Id.Num.ToString(),
                 Url = payload.TryGetValue("url", out var urlVal) && urlVal.KindCase == Value.KindOneofCase.StringValue ? urlVal.StringValue : string.Empty,
                 Content = payload.TryGetValue("content", out var contentVal) && contentVal.KindCase == Value.KindOneofCase.StringValue ? contentVal.StringValue : string.Empty,
                 ResourceId = payload.TryGetValue("resourceId", out var resourceIdVal) && resourceIdVal.KindCase == Value.KindOneofCase.StringValue ? resourceIdVal.StringValue : string.Empty,

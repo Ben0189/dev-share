@@ -10,7 +10,8 @@ public static class TestHost
             .Build();
 
         var services = new ServiceCollection();
-        services.AddApplicationServices(config); 
+        services.AddInfrastructureServices(config)
+                .AddApplicationServices();
 
         return services.BuildServiceProvider();
     }

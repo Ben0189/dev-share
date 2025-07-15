@@ -1,5 +1,3 @@
-using Entities;
-
 namespace Models;
 
 public class ResourceDto
