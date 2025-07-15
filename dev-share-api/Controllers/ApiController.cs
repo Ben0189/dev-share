@@ -128,7 +128,7 @@ public class ExtractController : ControllerBase
                 query: request.Text,
                 topK: request.TopRelatives);
 
-
+            resourceResults = null;
             if (resourceResults == null
                 || resourceResults.Count == 0
                 || insightResults == null
