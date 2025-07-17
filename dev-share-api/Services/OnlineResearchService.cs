@@ -7,7 +7,7 @@ namespace Services;
 
 public interface IOnlineResearchService
 {
-    Task<IEnumerable<VectorResourceDto>> PerformOnlineResearchAsync(string query, int topK);
+    Task<IEnumerable<ResourceDto>> PerformOnlineResearchAsync(string query, int topK);
 }
 
 public class OnlineResearchService : IOnlineResearchService
@@ -25,7 +25,7 @@ public class OnlineResearchService : IOnlineResearchService
         _client = openAIClient ?? throw new ArgumentNullException(nameof(openAIClient));
     }
 
-    public async Task<IEnumerable<VectorResourceDto>> PerformOnlineResearchAsync(string query, int topK = 3)
+    public async Task<IEnumerable<ResourceDto>> PerformOnlineResearchAsync(string query, int topK = 3)
     {
         if (string.IsNullOrWhiteSpace(query))
         {
@@ -52,7 +52,7 @@ public class OnlineResearchService : IOnlineResearchService
         return response.Content?.FirstOrDefault()?.Text ?? string.Empty;
     }
 
-    private async Task<IEnumerable<VectorResourceDto>> ParseResponseToVectorResourceDtos(string response)
+    private static async Task<IEnumerable<ResourceDto>> ParseResponseToVectorResourceDtos(string response)
     {
         if (string.IsNullOrWhiteSpace(response))
         {
@@ -66,10 +66,11 @@ public class OnlineResearchService : IOnlineResearchService
                 .Replace("```json", "")
                 .Replace("```", "")
                 .Replace("\\n", "")
+                .Replace("\n", "")
                 .Trim();
 
             var results = await Task.Run(() =>
-                JsonSerializer.Deserialize<VectorResourceDto[]>(cleanedResponse, _jsonOptions));
+                JsonSerializer.Deserialize<ResourceDto[]>(cleanedResponse, _jsonOptions));
 
             if (results?.Any() == true)
             {
@@ -78,7 +79,7 @@ public class OnlineResearchService : IOnlineResearchService
 
             // Try parsing as single object if array fails
             var singleResult = await Task.Run(() =>
-                JsonSerializer.Deserialize<VectorResourceDto>(cleanedResponse, _jsonOptions));
+                JsonSerializer.Deserialize<ResourceDto>(cleanedResponse, _jsonOptions));
 
             return singleResult != null
                 ? new[] { singleResult }
@@ -97,15 +98,11 @@ public class OnlineResearchService : IOnlineResearchService
 
                 [
                     {{
-                        ""Id"": ""unique-id-123"",
                         ""Content"": ""First concise, factual answer here."",
-                        ""Score"": 0.95,
                         ""Url"": ""https://relevant-source-1.com""
                     }},
                     {{
-                        ""Id"": ""unique-id-456"",
                         ""Content"": ""Second concise, factual answer here."",
-                        ""Score"": 0.85,
                         ""Url"": ""https://relevant-source-2.com""
                     }}
                 ]
@@ -115,11 +112,12 @@ public class OnlineResearchService : IOnlineResearchService
                 Return exactly {topK} JSON objects in an array. Ensure each answer is unique and relevant.";
     }
 
-    private static VectorResourceDto CreateFallbackDto(string content) => new()
+    private static ResourceDto CreateFallbackDto(string fallBackContent)
     {
-        Id = IdGeneratorUtil.GetNextId().ToString(),
-        Content = content,
-        Score = 0,
-        Url = string.Empty
-    };
+        return new()
+        {
+            Content = fallBackContent,
+            Url = string.Empty
+        };
+    }
 }

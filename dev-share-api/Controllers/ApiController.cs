@@ -128,15 +128,14 @@ public class ExtractController : ControllerBase
                 query: request.Text,
                 topK: request.TopRelatives);
 
-            resourceResults = null;
             if (resourceResults == null
                 || resourceResults.Count == 0
                 || insightResults == null
                 || insightResults.Count == 0)
             {
                 // Fallback to online research
-                var onlineResult = await _onlineResearchService.PerformOnlineResearchAsync(request.Text, 3);
-                return Ok(new { source = "online", result = onlineResult });
+                var onlineResult = await _onlineResearchService.PerformOnlineResearchAsync(request.Text, request.TopRelatives);
+                return Ok(new { source = "online", result = onlineResult.ToList() });
             }
             else
             {
