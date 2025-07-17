@@ -29,7 +29,10 @@ export default function SearchBar() {
 
     return () => clearInterval(interval);
   }, [placeholders.length]);
-
+  useEffect(() => {
+    const initialQuery = searchParams.get('query') || '';
+    setQuery(initialQuery);
+  }, [searchParams]);
   const handleSearch = useDebouncedCallback((term) => {
     const params = new URLSearchParams(Array.from(searchParams.entries()));
     if (term) {
@@ -61,6 +64,7 @@ export default function SearchBar() {
           setQuery(e.target.value);
         }}
         defaultValue={searchParams.get('query')?.toString()}
+        value={query}
         className="pl-10 h-11 rounded-lg bg-card transition-all duration-300 focus:ring-2 focus:ring-primary/20 w-3/5"
       />
     </form>
