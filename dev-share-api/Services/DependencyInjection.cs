@@ -40,10 +40,7 @@ public static class DependencyInjection
 
         // Database
         services.AddDbContext<DevShareDbContext>(options =>
-        {
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
-            Console.Write("database");
-        });
+            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
            
 
         // HTTP Client

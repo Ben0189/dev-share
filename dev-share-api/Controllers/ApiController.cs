@@ -142,11 +142,6 @@ public class ExtractController : ControllerBase
             {
                 //2. do rerank and get reranked list
                 var rerankResults = GetRerankedList(resourceResults, insightResults);
-                
-                Console.WriteLine(JsonSerializer.Serialize(resourceResults, new JsonSerializerOptions
-                {
-                    WriteIndented = true // 美化格式
-                }));
 
                 //3. get　finalResults from sql server by id
                 var results = new List<ResourceDto>();

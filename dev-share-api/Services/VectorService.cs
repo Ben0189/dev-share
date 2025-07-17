@@ -185,7 +185,7 @@ public class VectorService : IVectorService
             prefetch: prefetch,
             query: Fusion.Rrf,
             limit: (ulong)topK,
-            scoreThreshold: (float)0.7, //todo: make this dynamic
+            scoreThreshold: (float)0.9, //todo: make this dynamic
             payloadSelector: true,
             vectorsSelector: false
         );
