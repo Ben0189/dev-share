@@ -14,7 +14,8 @@ export async function searchResources(query: string): Promise<Resource[]> {
 
   if (!result.ok) throw new Error(`Search failed (${result.status})`);
 
-  const dtos: VectorSearchResultDTO[] = await result.json();
+  const responseJson = await result.json();
+  const dtos: VectorSearchResultDTO[] = responseJson.result;
 
   return dtos.map(dto => ({
     id: crypto.randomUUID(),

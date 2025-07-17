@@ -20,7 +20,10 @@ public class EmbeddingShareChainHandle : BaseShareChainHandle
 
     protected override async Task<HandlerResult> ProcessAsync(ResourceShareContext context)
     {
-        context.ResourceVectors = await GetVectors(context.Summary);
+        if(context.ExistingResource == null)
+        {
+            context.ResourceVectors = await GetVectors(context.Summary);
+        }
         
         if (!string.IsNullOrWhiteSpace(context.Insight))
         {
