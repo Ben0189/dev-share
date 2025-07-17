@@ -7,6 +7,7 @@ using Qdrant.Client.Grpc;
 using System.Text;
 using Executor;
 using System.Collections.Concurrent;
+using System.Text.Json;
 using Newtonsoft.Json.Linq;
 
 
@@ -141,14 +142,18 @@ public class ExtractController : ControllerBase
             {
                 //2. do rerank and get reranked list
                 var rerankResults = GetRerankedList(resourceResults, insightResults);
+                
+                Console.WriteLine(JsonSerializer.Serialize(resourceResults, new JsonSerializerOptions
+                {
+                    WriteIndented = true // 美化格式
+                }));
 
                 //3. get　finalResults from sql server by id
                 var results = new List<ResourceDto>();
                 foreach (var item in rerankResults)
                 {
                     var resourceId = item.ResourceId;
-                    var obj = JObject.Parse(resourceId);
-                    var resource = await _resourceService.GetResourceById(long.Parse(obj["num"].ToString()));
+                    var resource = await _resourceService.GetResourceById(long.Parse(resourceId));
                     if (resource != null)
                     {
                         results.Add(resource);
