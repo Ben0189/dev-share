@@ -34,7 +34,8 @@ public class DatabaseShareChainHandle : BaseShareChainHandle
                 {
                     ResourceId = resourceId,
                     Content = context.Summary,
-                    Url = context.Url
+                    Url = context.Url,
+                    Title = context.Title
                 });
             await _vectorService.UpsertResourceAsync(
                 resourceId.ToString(),

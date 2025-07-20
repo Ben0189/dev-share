@@ -21,7 +21,10 @@ public class ResourceService : IResourceService
             ResourceId = resourceDto.ResourceId,
             NormalizeUrl = resourceDto.NormalizeUrl,
             Url = resourceDto.Url,
-            Content = resourceDto.Content
+            Content = resourceDto.Content,
+            Title = resourceDto.Title,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
         });
         await _dbContext.SaveChangesAsync();
     }
@@ -35,7 +38,8 @@ public class ResourceService : IResourceService
                 ResourceId = resource.ResourceId,
                 Url = resource.Url,
                 NormalizeUrl = resource.NormalizeUrl,
-                Content = resource.Content
+                Content = resource.Content,
+                Title = resource.Title
             }).FirstOrDefaultAsync();
     }
     
@@ -49,6 +53,7 @@ public class ResourceService : IResourceService
                 Url = resource.Url,
                 NormalizeUrl = resource.NormalizeUrl,
                 Content = resource.Content,
+                Title = resource.Title,
                 UserInsights = resource.UserInsights
                     .Select(insight => new UserInsightDto
                     {
