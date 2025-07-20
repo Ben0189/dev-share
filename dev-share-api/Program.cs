@@ -1,3 +1,5 @@
+using DevShare.Api.Configuration;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Configuration
@@ -19,6 +21,9 @@ builder.Services
     .AddCorsConfiguration()
     .AddInfrastructureServices(builder.Configuration)
     .AddApplicationServices();
+
+builder.Services.Configure<VectorDbSettings>(
+    builder.Configuration.GetSection(VectorDbSettings.SectionName));
 
 var app = builder.Build();
 
