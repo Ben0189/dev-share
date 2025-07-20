@@ -21,4 +21,5 @@ export interface Resource {
 export interface VectorSearchResultDTO {
   url: string;
   content: string;
+  title: string;
 }

@@ -8,7 +8,7 @@ export async function submitSharedResource(url: string, comment: string): Promis
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ url, comment }),
+        body: JSON.stringify({ url: url, insight: comment }),
         signal: controller.signal,
       });
   
