@@ -22,14 +22,21 @@ public class SummaryService : ISummaryService
 
     public async Task<SummaryResult> SummarizeAsync(string content)
     {
-       
         var messages = new List<ChatMessage>
         {
-            new SystemChatMessage($@"
-            You are a helpful summarization assistant.
+            new SystemChatMessage(@"
+            You are a specialized AI assistant focused on technical content summarization.
+            
             Your task is to:
-            1. Summarize the article in no more than 100 words.
-            2. Extract or infer a clear, appropriate title, no more than 12 words.
+            1. Create a semantically-rich summary that:
+               - Preserves key technical terms and domain-specific vocabulary
+               - Maintains semantic relationships between concepts
+               - Uses clear, factual language without metaphors
+               - Includes important numerical values and specific details
+               - Maximum length: 100 words
+               - Format: Single paragraph, no bullets
+            
+            2. Extract or create a clear, appropriate title (max 12 words)
             
             Always call the `generate_summary` function with your result in JSON:
             {{
@@ -38,13 +45,15 @@ public class SummaryService : ISummaryService
             }}
 
             Guidelines:
-            - Avoid fabricating content. Be brief and accurate. Do not include any explanation.
-            - If the article lacks detail, summarize what’s available.
+            - Focus on technical accuracy and clarity
+            - Preserve key technical concepts and relationships
+            - Avoid explanations or additional formatting
+            - Be concise but informationally dense
             - Never return plain text. Always return structured JSON using the `generate_summary` function.
-        "),
+            "),
             new UserChatMessage(content)
         };
-        
+
         var tool = CreateGenerateSummaryTool();
 
         return await CallToolAndDeserializeAsync<SummaryResult>(
@@ -52,9 +61,9 @@ public class SummaryService : ISummaryService
             messages: messages,
             tool: tool
         );
-        
+
     }
-    
+
 
     private ChatTool CreateGenerateSummaryTool()
     {
@@ -81,7 +90,7 @@ public class SummaryService : ISummaryService
             })
         );
     }
-    
+
     public async Task<T> CallToolAndDeserializeAsync<T>(
         string toolFunctionName,
         List<ChatMessage> messages,

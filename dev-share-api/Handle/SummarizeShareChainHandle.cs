@@ -26,11 +26,15 @@ public class SummarizeShareChainHandle : BaseShareChainHandle
 
     protected override async Task<HandlerResult> ProcessAsync(ResourceShareContext context)
     {
+        if (string.IsNullOrWhiteSpace(context.ExtractResult))
+        {
+            return HandlerResult.Fail("No content provided for summarization");
+        }
 
         var summary = await _summaryService.SummarizeAsync(context.ExtractResult);
         context.Summary = summary.Summary;
         context.Title = summary.Title;
         return HandlerResult.Success();
     }
-    
+
 }
