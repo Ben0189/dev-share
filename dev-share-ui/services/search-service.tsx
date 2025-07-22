@@ -19,7 +19,7 @@ export async function searchResources(query: string): Promise<Resource[]> {
 
   return dtos.map(dto => ({
     id: crypto.randomUUID(),
-    title: dto.content.slice(0, 80),
+    title: dto.title,
     description: dto.content,
     url: dto.url,
     imageUrl: "",

@@ -26,14 +26,11 @@ public class SummarizeShareChainHandle : BaseShareChainHandle
 
     protected override async Task<HandlerResult> ProcessAsync(ResourceShareContext context)
     {
-        var prompt = new StringBuilder()
-            .AppendLine("You will receive an input text and your task is to summarize the article in no more than 100 words.")
-            .AppendLine("Only return the summary. Do not include any explanation.")
-            .AppendLine("# Article content:")
-            .AppendLine($"{context.ExtractResult}")
-            .ToString();
-        var summary = await _summaryService.SummarizeAsync(prompt);
-        context.Summary = summary;
+
+        var summary = await _summaryService.SummarizeAsync(context.ExtractResult);
+        context.Summary = summary.Summary;
+        context.Title = summary.Title;
         return HandlerResult.Success();
     }
+    
 }

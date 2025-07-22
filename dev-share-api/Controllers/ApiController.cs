@@ -85,6 +85,7 @@ public class ExtractController : ControllerBase
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine(ex.ToString());
                     task.Status = "failed";
                     task.Message = ex.Message;
                 }
@@ -159,6 +160,7 @@ public class ExtractController : ControllerBase
         }
         catch (Exception ex)
         {
+            Console.WriteLine(ex.ToString());
             return StatusCode(500, "Search failed due to an internal error.");
         }
     }

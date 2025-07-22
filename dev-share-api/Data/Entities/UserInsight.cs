@@ -13,4 +13,6 @@ public class UserInsight
     public string Content { get; set; }
     [ForeignKey("ResourceId")]
     public Resource Resource { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 }

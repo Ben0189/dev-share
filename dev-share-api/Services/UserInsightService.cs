@@ -19,7 +19,9 @@ public class UserInsightService : IUserInsightService
         _dbContext.UserInsights.Add(new UserInsight
         {
             ResourceId = userInsight.ResourceId,
-            Content = userInsight.Content
+            Content = userInsight.Content,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
         });
         await _dbContext.SaveChangesAsync();
     }
