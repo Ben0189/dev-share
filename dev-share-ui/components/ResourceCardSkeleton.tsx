@@ -6,7 +6,7 @@ export default function ResourceCardSkeleton() {
     <Card className="flex flex-col justify-between min-h-[320px] min-w-0 p-0 rounded-xl border shadow-sm bg-white transition-all duration-300 hover:shadow-md relative animate-pulse">
       {/* Top - Avatar and Meta */}
       <div className="flex items-center gap-3 px-6 pt-6 pb-2">
-        <Skeleton className="h-10 w-10 rounded-full" />
+        <Skeleton className="h-8 w-8 rounded-full" />
         <div className="flex flex-col gap-2 flex-1">
           <Skeleton className="h-3 w-3/4" />
           <Skeleton className="h-2 w-1/2" />

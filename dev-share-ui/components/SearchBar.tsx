@@ -1,17 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useSearchParams, usePathname, useRouter } from 'next/navigation';
-import { useDebouncedCallback } from 'use-debounce';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function SearchBar() {
   const router = useRouter();
-  const [query, setQuery] = useState('');
-  const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const searchParams = useSearchParams();
-  const pathname = usePathname();
+  const [input, setInput] = useState(searchParams.get('query') || '');
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const placeholders = [
     'Search resources, tools, guides...',
     'TypeScript tutorials for beginners',
@@ -20,7 +18,6 @@ export default function SearchBar() {
     'Learn CSS Grid and Flexbox',
     'Node.js backend architecture patterns',
   ];
-
   // Rotate placeholder text every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
@@ -29,43 +26,25 @@ export default function SearchBar() {
 
     return () => clearInterval(interval);
   }, [placeholders.length]);
-  useEffect(() => {
-    const initialQuery = searchParams.get('query') || '';
-    setQuery(initialQuery);
-  }, [searchParams]);
-  const handleSearch = useDebouncedCallback((term) => {
-    const params = new URLSearchParams(Array.from(searchParams.entries()));
-    if (term) {
-      params.set('query', term);
-    } else {
-      params.delete('query');
-    }
-
-    router.replace(`${pathname}?${params.toString()}`);
-  }, 400);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      router.push(`/result/?query=${query}`);
+    if (input && input !== searchParams.get('query')) {
+      router.push(`/result?query=${encodeURIComponent(input)}`);
     }
   };
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="relative w-full flex-1 flex items-center justify-center"
+      className="relative w-full flex items-center justify-center"
     >
       <Search className="relative left-8 text-muted-foreground" />
       <Input
-        type="search"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
         placeholder={placeholders[placeholderIndex]}
-        onChange={(e) => {
-          handleSearch(e.target.value);
-          setQuery(e.target.value);
-        }}
-        defaultValue={searchParams.get('query')?.toString()}
-        value={query}
-        className="pl-10 h-11 rounded-lg bg-card transition-all duration-300 focus:ring-2 focus:ring-primary/20 w-3/5"
+        className="pl-10 h-11 rounded-lg bg-card w-3/5"
       />
     </form>
   );
