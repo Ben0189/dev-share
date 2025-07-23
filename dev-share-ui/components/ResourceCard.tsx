@@ -77,11 +77,12 @@ export default function ResourceCard({
       </button>
       {/* Author and meta */}
       <div className="flex items-center gap-3 px-6 pt-6 pb-2">
-        <img
+        {/* <img
           src={resource.authorAvatar}
           alt={resource.authorName}
           className="w-8 h-8 rounded-full object-cover border fill-gray-600"
-        />
+        /> */}
+        <div className="w-8 h-8 rounded-full object-cover border bg-slate-500"></div>
         <div className="flex flex-col">
           <span className="font-medium text-sm text-foreground leading-tight">
             {resource.authorName}
