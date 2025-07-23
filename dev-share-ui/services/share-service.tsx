@@ -13,7 +13,7 @@ export async function submitSharedResource(
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url, comment }),
+        body: JSON.stringify({ url: url, insight: comment }),
         signal: controller.signal,
       }
     );

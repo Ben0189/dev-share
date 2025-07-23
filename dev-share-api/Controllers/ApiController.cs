@@ -1,99 +1,91 @@
-using System;
-using System.Threading.Tasks;
 using HtmlAgilityPack;
 using Microsoft.Playwright;
 using Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.AI;
 using Services;
 using Qdrant.Client.Grpc;
 using System.Text;
 using Executor;
 using System.Collections.Concurrent;
+using System.Text.Json;
+using Newtonsoft.Json.Linq;
 
 
-namespace UrlExtractorApi.Controllers;
+namespace Controllers;
 
 [ApiController]
 [Route("api")]
 public class ExtractController : ControllerBase
 {
-    private readonly ISummaryService _summaryService;
+
     private readonly IEmbeddingService _embeddingService;
     private readonly IVectorService _vectorService;
-    private readonly ShareChainExecutor _shareChainExecutor;
+    private readonly IResourceService _resourceService;
+    private readonly IOnlineResearchService _onlineResearchService;
+    private readonly IServiceScopeFactory _scopeFactory;
     private static readonly ConcurrentDictionary<string, ShareTask> TaskStore = new();
 
     public ExtractController(
-        ISummaryService summaryService,
         IEmbeddingService embeddingService,
         IVectorService vectorService,
-        ShareChainExecutor shareChainExecutor)
+        IOnlineResearchService onlineResearchService,
+        IServiceScopeFactory scopeFactory,
+        IResourceService resourceService)
     {
-        _summaryService = summaryService;
         _embeddingService = embeddingService;
         _vectorService = vectorService;
-        _shareChainExecutor = shareChainExecutor;
+        _onlineResearchService = onlineResearchService;
+        _scopeFactory = scopeFactory;
+        _resourceService = resourceService;
     }
 
     [HttpPost("share")]
     public async Task<IActionResult> Share([FromBody] UrlRequest request)
     {
-            var url = request.Url;
+        var url = request.Url;
 
-            //URL check
-            if (string.IsNullOrWhiteSpace(url))
-            {
-                return BadRequest("URL is required.");
-            }
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uriResult) ||
-            (uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps))
-            {
-                return BadRequest("URL must start with http:// or https:// and be a valid absolute URL.");
-            }
+        //URL check
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return BadRequest("URL is required.");
+        }
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uriResult) ||
+        (uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps))
+        {
+            return BadRequest("URL must start with http:// or https:// and be a valid absolute URL.");
+        }
 
-            Console.WriteLine($"Extracting: {url}");
+        Console.WriteLine($"Extracting: {url}");
 
-            var taskId = Guid.NewGuid().ToString();
-            var task = new ShareTask
-            {
-                TaskId = taskId,
-                Url = url,
-                Status = "pending"
-            };
-            TaskStore[taskId] = task;
-            Console.WriteLine($"[POST] Saving task: {taskId}");
-            Console.WriteLine($"[POST] TaskStore count: {TaskStore.Count}");
+        var taskId = Guid.NewGuid().ToString();
+        var task = new ShareTask
+        {
+            TaskId = taskId,
+            Url = url,
+            Status = "pending"
+        };
+        TaskStore[taskId] = task;
+        Console.WriteLine($"[POST] Saving task: {taskId}");
+        Console.WriteLine($"[POST] TaskStore count: {TaskStore.Count}");
 
         _ = Task.Run(async () =>
             {
+                using var scope = _scopeFactory.CreateScope();
+                var executor = scope.ServiceProvider.GetRequiredService<ShareChainExecutor>();
                 try
                 {
-                Console.WriteLine($"Extracting: {url}");
-                var result = TryHtmlAgilityPack(url);
-                if (string.IsNullOrWhiteSpace(result))
-                    result = await TryPlaywright(url);
-                if (string.IsNullOrWhiteSpace(result))
-                    throw new Exception("Content extraction failed.");
+                    await executor.ExecuteAsync(new ResourceShareContext
+                    {
+                        Url = url,
+                        Insight = request.Insight
+                    });
 
-                var prompt = new StringBuilder()
-                    .AppendLine("You will receive an input text and your task is to summarize the article in no more than 100 words.")
-                    .AppendLine("Only return the summary. Do not include any explanation.")
-                    .AppendLine("# Article content:")
-                    .AppendLine($"{result}")
-                    .ToString();
-
-                await _shareChainExecutor.ExecuteAsync(new ResourceShareContext
-                {
-                    Url = url,
-                    Prompt = prompt
-                });
-
-                task.Status = "success";
-                task.Message = "Processed successfully";
+                    task.Status = "success";
+                    task.Message = "Processed successfully";
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine(ex.ToString());
                     task.Status = "failed";
                     task.Message = ex.Message;
                 }
@@ -118,27 +110,61 @@ public class ExtractController : ControllerBase
     }
 
     [HttpPost("search")]
-    public async Task<ActionResult<float[]>> Search([FromBody] SearchRequest request)
+    public async Task<IActionResult> Search([FromBody] SearchRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Text))
         {
-            return BadRequest("Search text cannot be empty.");
+            return BadRequest(new { message = "Search text cannot be empty." });
         }
         if (request.TopRelatives <= 0 || request.TopRelatives > 100)
             return BadRequest("TopRelatives must be between 1 and 100.");
 
         try
         {
-            var denseEmbedding = await _embeddingService.GetDenseEmbeddingAsync(request.Text);
-            var (indices, values) = await _embeddingService.GetSparseEmbeddingAsync(request.Text);
-            var results = await _vectorService.SearchEmbeddingAsync(denseQueryVector: denseEmbedding, sparseIndices: indices, sparseValues: values, topK: request.TopRelatives);
-            return Ok(results);
+            //get vectordb data results
+            var resourceResults = await _vectorService.SearchResourceAsync(
+                query: request.Text,
+                topK: request.TopRelatives);
+
+            var insightResults = await _vectorService.SearchInsightAsync(
+                query: request.Text,
+                topK: request.TopRelatives);
+
+            if (resourceResults == null
+                || resourceResults.Count == 0
+                || insightResults == null
+                || insightResults.Count == 0)
+            {
+                // Fallback to online research
+                var onlineResult = await _onlineResearchService.PerformOnlineResearchAsync(request.Text, request.TopRelatives);
+                return Ok(new { source = "online", result = onlineResult.ToList() });
+            }
+            else
+            {
+                //2. do rerank and get reranked list
+                var rerankResults = GetRerankedList(resourceResults, insightResults);
+
+                //3. get　finalResults from sql server by id
+                var results = new List<ResourceDto>();
+                foreach (var item in rerankResults)
+                {
+                    var resourceId = item.ResourceId;
+                    var resource = await _resourceService.GetResourceById(long.Parse(resourceId));
+                    if (resource != null)
+                    {
+                        results.Add(resource);
+                    }
+                }
+                return Ok(new { source = "vector", result = results });
+            }
         }
         catch (Exception ex)
         {
+            Console.WriteLine(ex.ToString());
             return StatusCode(500, "Search failed due to an internal error.");
         }
     }
+
 
     [HttpPost("vector/init")]
     public async Task<ActionResult<float[]>> InitVectorDB()
@@ -147,18 +173,25 @@ public class ExtractController : ControllerBase
         return Ok();
     }
 
-    [HttpPost("embedding/generate")]
-    public async Task<ActionResult> GenerateEmbedding([FromBody] GenerateEmbeddingRequest request)
+    [HttpPost("embedding/indexing")]
+    public async Task<ActionResult<UpdateResult>> Indexing([FromBody] string collectionName, string field)
     {
-        var denseEmbedding = await _embeddingService.GetDenseEmbeddingAsync(request.Text);
-        var sparseEmbedding = await _embeddingService.GetSparseEmbeddingAsync(request.Text);
+        return Ok(await _vectorService.IndexingAsync(collectionName, field));
+    }
+
+    [HttpPost("insight/share")]
+    public async Task<IActionResult> ShareInsight([FromBody] ShareInsightRequest request)
+    {
+        var insightId = request.InsightId ?? Guid.NewGuid().ToString();
+        var denseEmbedding = await _embeddingService.GetDenseEmbeddingAsync(request.Content);
+        var (indices, values) = await _embeddingService.GetSparseEmbeddingAsync(request.Content);
 
         var denseVector = new DenseVector();
         denseVector.Data.AddRange(denseEmbedding);
 
         var sparseVector = new SparseVector();
-        sparseVector.Indices.AddRange(sparseEmbedding.indices); // Item2 = indices
-        sparseVector.Values.AddRange(sparseEmbedding.values);  // Item1 = values
+        sparseVector.Indices.AddRange(indices);
+        sparseVector.Values.AddRange(values);
 
         var vectors = new Dictionary<string, Vector>
         {
@@ -166,82 +199,42 @@ public class ExtractController : ControllerBase
             ["sparse_vector"] = new() { Sparse = sparseVector }
         };
 
-        return Ok(vectors);
+        request.Vectors = vectors;
+        await _vectorService.UpsertInsightAsync(insightId, request.Url, request.Content, request.ResourceId, request.Vectors);
+        return Ok();
     }
 
-    [HttpPut("embedding/put")]
-    public async Task<ActionResult<UpdateResult>> InsertEmbedding([FromBody] InsertEmbeddingRequest request)
+    //todo make sure the return data from service is List<Resource> and List<Insight>
+    private static List<Rerank> GetRerankedList(List<VectorResourceDto> resources, List<VectorInsightDto> insights)
     {
-        return Ok(await _vectorService.UpsertEmbeddingAsync(request.Url, request.NoteId, request.Text, request.Vectors));
-    }
+        // averge comment.score
+        var insightGroups = insights
+            .GroupBy(c => c.ResourceId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Average(c => c.Score)
+            );
 
-    // [HttpPut("embedding/put")]
-    // public async Task<ActionResult<UpdateResult>> InsertEmbedding([FromBody] InsertEmbeddingRequest request)
-    // {
-    //     return Ok(await _vectorService.UpsertEmbeddingAsync(request.Url, request.NoteId, request.Text, request.Vectors));
-    // }
+        // content.score find table
+        var resourceScores = resources
+            .ToDictionary(c => c.Id, c => c.Score);
 
-    [HttpPost("embedding/indexing")]
-    public async Task<ActionResult<UpdateResult>> Indexing([FromBody] string field)
-    {
-        return Ok(await _vectorService.IndexingAsync(field));
-    }
+        // union all contentId
+        var allResourceIds = resourceScores.Keys
+            .Union(insightGroups.Keys)
+            .Distinct();
 
-    private string? TryHtmlAgilityPack(string url)
-    {
-        try
-        {
-            var web = new HtmlWeb
+        var result = allResourceIds
+            .Select(id => new Rerank
             {
-                // 设置 User-Agent，防止部分网站屏蔽爬虫
-                UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                            "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                            "Chrome/120.0.0.0 Safari/537.36"
-            };
-            var doc = web.Load(url);
+                ResourceId = id,
+                Score =
+                    (resourceScores.TryGetValue(id, out var rScore) ? rScore : 0) * 0.7 +
+                    (insightGroups.TryGetValue(id, out var iAvg) ? iAvg : 0) * 0.3
+            })
+            .OrderByDescending(r => r.Score)
+            .ToList();
 
-            //TODO 编码问题
-            // using var client = new HttpClient();
-            //         var bytes = client.GetByteArrayAsync(url).Result;
-            //         var html = System.Text.Encoding.UTF8.GetString(bytes);
-            //         var doc = new HtmlDocument();
-            //         doc.LoadHtml(html);
-
-
-            // 提取网页标题
-            var titleNode = doc.DocumentNode.SelectSingleNode("//title");
-            Console.WriteLine("Title: " + titleNode?.InnerText);
-
-            // 提取所有段落文本
-            var paragraphs = doc.DocumentNode.SelectNodes("//p");
-            if (paragraphs == null) return null;
-
-            var title = titleNode?.InnerText.Trim() ?? "";
-            var paragraphText = string.Join("\n", paragraphs
-                .Select(p => p.InnerText.Trim())
-                .Where(t => !string.IsNullOrWhiteSpace(t)));
-
-            return title + "\n\n" + paragraphText;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    // 使用 Playwright 模拟浏览器加载网页并提取段落内容（用于 CSR 页面）
-    private async Task<string> TryPlaywright(string url)
-    {
-        // 启动 Playwright 浏览器（无头模式）
-        using var playwright = await Playwright.CreateAsync();
-        await using var browser = await playwright.Chromium.LaunchAsync(new() { Headless = true });
-
-        // 打开新页面并导航到目标地址，等待网络空闲（页面渲染完成）
-        var page = await browser.NewPageAsync();
-        await page.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
-
-        // 提取所有 <p> 元素的 innerText，去除空行
-        var text = await page.EvalOnSelectorAllAsync<string[]>("p", "els => els.map(e => e.innerText).filter(t => t.trim().length > 0)");
-        return string.Join("\n", text);
+        return result;
     }
 }

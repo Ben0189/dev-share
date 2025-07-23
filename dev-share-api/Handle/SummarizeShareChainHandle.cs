@@ -1,11 +1,10 @@
+using System.Text;
 using Models;
 
 namespace Services;
 
-
 public class SummarizeShareChainHandle : BaseShareChainHandle
 {
-
     private readonly ISummaryService _summaryService;
 
     public SummarizeShareChainHandle(ISummaryService summaryService)
@@ -15,17 +14,23 @@ public class SummarizeShareChainHandle : BaseShareChainHandle
 
     protected override void Validate(ResourceShareContext context)
     {
-        if (string.IsNullOrWhiteSpace(context.Prompt))
-        {
-            throw new ArgumentNullException(nameof(context.Prompt), "Prompt cannot be null or empty.");
-        }
+        // if (context.ExistingResource == null && string.IsNullOrWhiteSpace(context.Prompt))
+        //     throw new ArgumentNullException(nameof(context.Prompt), "Prompt cannot be null or empty.");
+    }
+
+    public override async Task<bool> IsSkip(ResourceShareContext context)
+    {
+        return context.ExistingResource != null;
     }
 
 
-    protected async override Task<HandlerResult> ProcessAsync(ResourceShareContext context)
+    protected override async Task<HandlerResult> ProcessAsync(ResourceShareContext context)
     {
-        var summary = await _summaryService.SummarizeAsync(context.Prompt);
-        context.Summary = summary;
+
+        var summary = await _summaryService.SummarizeAsync(context.ExtractResult);
+        context.Summary = summary.Summary;
+        context.Title = summary.Title;
         return HandlerResult.Success();
     }
+    
 }
