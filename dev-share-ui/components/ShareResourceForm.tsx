@@ -1,12 +1,14 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Plus, Link as LinkIcon, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { useForm, SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { ShareResourceFormSchema } from '@/lib/schemas';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
+import { Form, FormControl, FormField, FormItem, FormMessage } from './ui/form';
 import {
   Card,
   CardContent,
@@ -14,201 +16,167 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from './ui/card';
 
-interface ShareResourceFormProps {
-  onClose: () => void;
-  onSubmit: (resource: any) => void;
-}
+import { toast } from 'sonner';
+import { LinkIcon, MessageSquare } from 'lucide-react';
+import { submitSharedResource } from '@/services/share-service';
+import { pollShareStatus } from '@/services/polling-service';
+import { useRouter } from 'next/navigation';
+import { useWatch } from 'react-hook-form';
 
-export default function ShareResourceForm({ onClose, onSubmit }: ShareResourceFormProps) {
-  const [url, setUrl] = useState("");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [comment, setComment] = useState("");
-  const [tagInput, setTagInput] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [urlError, setUrlError] = useState("");
+type ShareFormInput = z.infer<typeof ShareResourceFormSchema>;
 
-  const handleAddTag = () => {
-    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()]);
-      setTagInput("");
-    }
-  };
+export const ShareResourceForm = () => {
+  const router = useRouter();
+  const form = useForm<ShareFormInput>({
+    resolver: zodResolver(ShareResourceFormSchema),
+    defaultValues: {
+      url: '',
+      comment: '',
+    },
+  });
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAddTag();
-    }
-  };
+  const {
+    handleSubmit,
+    control,
+    reset,
+    formState: { isSubmitting },
+  } = form;
 
-  const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
-  };
+  const commentValue = useWatch({ control, name: 'comment' });
 
-  const validateUrl = (url: string) => {
-    try {
-      new URL(url);
-      setUrlError("");
-      return true;
-    } catch (e) {
-      setUrlError("Please enter a valid URL (including http:// or https://)");
-      return false;
-    }
-  };
+  const processForm: SubmitHandler<ShareFormInput> = async (data) => {
+    const result = ShareResourceFormSchema.safeParse(data);
+    if (!result.success) return;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateUrl(url)) {
-      return;
-    }
-    
-    if (!title.trim()) {
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
-    // Create new resource object
-    const newResource = {
-      url,
-      title,
-      description,
-      tags,
-      date: new Date().toISOString(),
-      comment,
-    };
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    onSubmit(newResource);
-    
-    // Reset form
-    setUrl("");
-    setTitle("");
-    setDescription("");
-    setTags([]);
-    setComment("");
-    setIsSubmitting(false);
-    onClose();
+    const { url, comment } = result.data;
+    const task = await submitSharedResource(url, comment);
+
+    toast.promise(
+      pollShareStatus(task, {
+        maxPolls: 5,
+        interval: 3000,
+      }),
+      {
+        loading: 'Processing resource...please check status later',
+        success: 'Resource processing completed!',
+        error: (err) => {
+          if (err.message === 'failed') return 'Resource processing failed.';
+          if (err.message === 'timeout')
+            return 'Resource processing timed out.';
+          if (err.name === 'AbortError')
+            return 'Request timed out after 5 seconds.';
+          return 'An unexpected error occurred.';
+        },
+        finally: () => {
+          reset();
+        },
+      }
+    );
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto animate-in fade-in-50 slide-in-from-bottom-8 duration-300">
-      <CardHeader>
-        <CardTitle className="text-2xl">Share a Resource</CardTitle>
-        <CardDescription>
-          Help the developer community by sharing valuable resources you've found
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="url">Resource URL <span className="text-destructive">*</span></Label>
-            <div className="relative">
-              <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="url"
-                type="text"
-                placeholder="https://example.com/resource"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                className="pl-10"
-                required
+    <Form {...form}>
+      <div className="container px-4 py-8 mx-auto max-w-2xl">
+        <Card className="animate-in fade-in-50 slide-in-from-bottom-8 duration-300 rounded-2xl shadow-lg bg-white">
+          <CardHeader>
+            <CardTitle className="text-2xl">Share a Resource</CardTitle>
+            <CardDescription>
+              Share a valuable developer resource. Our AI will analyze it and
+              add relevant details.
+            </CardDescription>
+            <hr className="my-4 border-muted" />
+          </CardHeader>
+          <form onSubmit={handleSubmit(processForm)}>
+            <CardContent className="space-y-6">
+              {/* URL Field */}
+              <FormField
+                control={control}
+                name="url"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <Label htmlFor="url">
+                      Resource URL <span className="text-destructive">*</span>
+                    </Label>
+                    <div className="relative">
+                      <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <FormControl>
+                        <Input
+                          id="url"
+                          type="text"
+                          placeholder="https://example.com/resource"
+                          {...field}
+                          className="pl-10 focus:ring-2 focus:ring-primary/30 hover:border-primary transition-all duration-200"
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            {urlError && <p className="text-sm text-destructive">{urlError}</p>}
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="title">Title <span className="text-destructive">*</span></Label>
-            <Input
-              id="title"
-              type="text"
-              placeholder="Resource title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="comment">Your Comment <span className="text-destructive">*</span></Label>
-            <Textarea
-              id="comment"
-              placeholder="Share your thoughts, experience, or recommendation about this resource (e.g. I read this docs and I learn a lot... very recommend for beginner to React!)"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              rows={3}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="tags">Tags</Label>
-            <div className="flex items-center space-x-2">
-              <Input
-                id="tags"
-                type="text"
-                placeholder="Add tags (e.g., React, TypeScript)"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={handleKeyDown}
+
+              {/* Comment Field */}
+              <FormField
+                control={control}
+                name="comment"
+                render={({ field }) => (
+                  <FormItem className="space-y-2">
+                    <Label
+                      htmlFor="comment"
+                      className="flex items-center gap-2"
+                    >
+                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                      Your Comment
+                    </Label>
+                    <FormControl>
+                      <Textarea
+                        id="comment"
+                        placeholder="Share your thoughts, experience, or recommendation about this resource (e.g. I read this docs and I learn a lot... very recommend for beginner to React!)"
+                        rows={3}
+                        {...field}
+                        className="focus:ring-2 focus:ring-primary/30 hover:border-primary transition-all duration-200"
+                      />
+                    </FormControl>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
+                      <span>
+                        Let others know why you recommend this resource.
+                      </span>
+                      <span>{commentValue?.length || 0}/200</span>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <Button 
-                type="button" 
-                size="icon" 
-                variant="outline" 
-                onClick={handleAddTag}
+            </CardContent>
+
+            <CardFooter className="flex flex-col sm:flex-row sm:justify-between gap-2 mt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push('/')}
+                className="w-full sm:w-auto"
               >
-                <Plus className="h-4 w-4" />
+                Cancel
               </Button>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="pl-2 pr-1 py-1">
-                  {tag}
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-4 w-4 ml-1 hover:bg-destructive/20" 
-                    onClick={() => removeTag(tag)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={onClose}
-          >
-            Cancel
-          </Button>
-          <Button 
-            type="submit" 
-            disabled={isSubmitting || !url.trim() || !title.trim()}
-          >
-            {isSubmitting ? (
-              <>
-                <div className="h-4 w-4 mr-2 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              "Share Resource"
-            )}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full sm:w-auto bg-primary text-white font-semibold px-6 py-2 rounded-lg flex items-center justify-center gap-2 shadow-md hover:bg-primary/90 transition-all duration-200"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="h-4 w-4 mr-2 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>Share Resource</>
+                )}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+    </Form>
   );
-}
+};
