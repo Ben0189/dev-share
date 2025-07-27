@@ -46,7 +46,7 @@ export default function ResourceCard({
 }: ResourceCardProps) {
   return (
     <Card
-      className={`flex flex-col justify-between min-h-[320px] min-w-0 p-0 rounded-xl border shadow-sm bg-white transition-all duration-300 hover:shadow-md relative ${
+      className={`flex flex-col justify-between min-h-[320px] p-0 rounded-xl border-2 shadow-sm bg-background/80 transition-all duration-300 hover:shadow-md relative ${
         isAIGenerated ? 'border-indigo-500 ring-2 ring-indigo-200' : ''
       }`}
     >
@@ -67,7 +67,7 @@ export default function ResourceCard({
       )}
       {/* Bookmark button top right */}
       <button
-        className={`absolute top-4 right-4 z-10 bg-white/80 rounded-full p-2 shadow-sm border border-muted-foreground/10 hover:bg-primary/10 transition-colors ${
+        className={`absolute top-4 right-4 z-10 bg-background/80 rounded-full p-2 shadow-sm border-2 border-muted-foreground/10 hover:bg-primary/10 transition-colors ${
           resource.isBookmarked ? 'text-primary' : 'text-muted-foreground'
         }`}
         onClick={() => onAction(resource.id, 'bookmark')}
@@ -165,7 +165,7 @@ export default function ResourceCard({
         <Button
           asChild
           size="sm"
-          className="px-5 font-semibold text-base bg-primary hover:bg-primary/90 text-white"
+          className="p-2 px-4 font-semibold text-base bg-foreground/90 hover:bg-primary/90 text-background"
         >
           <a
             href={resource.url}
