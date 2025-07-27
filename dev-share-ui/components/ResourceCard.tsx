@@ -17,12 +17,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import ReadMoreArea from '@foxeian/react-read-more';
 
 interface ResourceCardProps {
   resource: Resource;
   onAction: (id: string, action: 'like' | 'bookmark') => void;
   isAIGenerated?: boolean;
 }
+const buttonStyle = {};
 
 function timeAgo(dateString: string) {
   const now = new Date();
@@ -122,9 +124,17 @@ export default function ResourceCard({
         <h3 className="text-lg font-semibold leading-snug mb-1 text-foreground">
           {resource.title}
         </h3>
-        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+        <ReadMoreArea
+          className="flex flex-col" // classes styles of main div (tailwind)
+          expandLabel="Read more" // Expand Label
+          collapseLabel="Read less" // Collapse Label
+          textClassName="text-sm text-muted-foreground" // classes styles of text (tailwind)
+          buttonClassName="text-foreground no-underline" // classes styles of button (tailwind)
+          buttonStyle={buttonStyle}
+          lettersLimit={80} // limit of letters (100 letters)
+        >
           {resource.description}
-        </p>
+        </ReadMoreArea>
         <div className="flex flex-wrap gap-2 mb-2 mt-auto">
           {resource.tags.map((tag) => (
             <Badge key={tag} variant="outline" className="text-xs font-medium">
