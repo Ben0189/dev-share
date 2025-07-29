@@ -17,19 +17,13 @@ export default function Navbar() {
 
         <nav className="hidden md:flex items-center gap-8">
           <Link
-            href="/"
-            className="text-md font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Discover
-          </Link>
-          <Link
             href="/share"
             className="text-md font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Share
           </Link>
+          <ThemeToggle />
         </nav>
-        <ThemeToggle />
       </div>
     </header>
   );
