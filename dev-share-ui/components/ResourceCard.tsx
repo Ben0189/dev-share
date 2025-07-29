@@ -16,7 +16,6 @@ interface ResourceCardProps {
   resource: Resource;
   onAction: (id: string, action: 'like' | 'bookmark') => void;
 }
-const buttonStyle = {};
 
 export default function ResourceCard({
   resource,
