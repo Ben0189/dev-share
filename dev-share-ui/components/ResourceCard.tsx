@@ -16,6 +16,7 @@ interface ResourceCardProps {
   resource: Resource;
   onAction: (id: string, action: 'like' | 'bookmark') => void;
 }
+const buttonStyle = {};
 
 export default function ResourceCard({
   resource,
@@ -57,7 +58,6 @@ export default function ResourceCard({
         >
           {resource.description}
         </ReadMoreArea>
-
         <div className="flex flex-wrap gap-2 mb-2 mt-auto">
           {resource.tags.map((tag) => (
             <Badge key={tag} variant="outline" className="text-xs font-medium">

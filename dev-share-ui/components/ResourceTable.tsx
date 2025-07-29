@@ -17,17 +17,16 @@ export default function ResourceTable() {
   const [debouncedQuery] = useDebounce(query, 400);
 
   const { data, isLoading } = useSWR(
-    debouncedQuery.trim() ? ['resources', debouncedQuery] : null,
+    debouncedQuery.trim() ? ['resources', debouncedQuery] : null, //Caches previous results
     () => fetcher(debouncedQuery.trim()),
     {
       revalidateOnFocus: false,
-      dedupingInterval: 5000,
+      dedupingInterval: 5000, //Avoids rerender too quickly
     }
   );
 
   const [resources, setResources] = useState<Resource[]>([]);
 
-  // Sync local state with fetched data
   useEffect(() => {
     if (data) {
       setResources(data);

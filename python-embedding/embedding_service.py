@@ -19,7 +19,7 @@ async def load_models():
     with ThreadPoolExecutor() as pool:
         dense_model, sparse_model = await asyncio.gather(
             loop.run_in_executor(pool, TextEmbedding, "sentence-transformers/all-MiniLM-L6-v2"),
-            loop.run_in_executor(pool, SparseTextEmbedding, "prithivida/Splade_PP_en_v1"),
+            loop.run_in_executor(pool, SparseTextEmbedding, "Qdrant/bm42-all-minilm-l6-v2-attentions"),
         )
     print("Models loaded successesful")
 

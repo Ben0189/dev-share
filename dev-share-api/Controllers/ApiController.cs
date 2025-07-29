@@ -173,7 +173,14 @@ public class ExtractController : ControllerBase
         return Ok();
     }
 
-    [HttpPost("embedding/indexing")]
+    [HttpPut("vector/updateCollection")]
+    public async Task<ActionResult<float[]>> UpdateCollection([FromBody] string collectionName)
+    {
+        await _vectorService.UpdateCollectionAsync(collectionName);
+        return Ok();
+    }
+
+    [HttpPost("vector/indexing")]
     public async Task<ActionResult<UpdateResult>> Indexing([FromBody] string collectionName, string field)
     {
         return Ok(await _vectorService.IndexingAsync(collectionName, field));
