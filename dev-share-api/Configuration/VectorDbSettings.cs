@@ -5,8 +5,8 @@ public class VectorDbSettings
     public const string SectionName = "VectorDb";
     
     // Collections
-    public string ResourceCollection { get; set; } = "DevShare_Resource";
-    public string InsightCollection { get; set; } = "DevShare_Insight";
+    public string ResourceCollection { get; set; } = "BlotzShare_Resource";
+    public string InsightCollection { get; set; } = "BlotzShare_Insight";
     
     // Vector dimensions
     public uint Dimensions { get; set; } = 384;  // MiniLM-L6-v2 dimension
