@@ -1,14 +1,9 @@
-using HtmlAgilityPack;
-using Microsoft.Playwright;
 using Models;
 using Microsoft.AspNetCore.Mvc;
 using Services;
 using Qdrant.Client.Grpc;
-using System.Text;
 using Executor;
 using System.Collections.Concurrent;
-using System.Text.Json;
-using Newtonsoft.Json.Linq;
 
 
 namespace Controllers;
@@ -186,29 +181,82 @@ public class ExtractController : ControllerBase
         return Ok(await _vectorService.IndexingAsync(collectionName, field));
     }
 
-    [HttpPost("insight/share")]
-    public async Task<IActionResult> ShareInsight([FromBody] ShareInsightRequest request)
+    [HttpPost("collections/{collectionName}")]
+    public async Task<IActionResult> CreateCollection(string collectionName)
     {
-        var insightId = request.InsightId ?? Guid.NewGuid().ToString();
-        var denseEmbedding = await _embeddingService.GetDenseEmbeddingAsync(request.Content);
-        var (indices, values) = await _embeddingService.GetSparseEmbeddingAsync(request.Content);
-
-        var denseVector = new DenseVector();
-        denseVector.Data.AddRange(denseEmbedding);
-
-        var sparseVector = new SparseVector();
-        sparseVector.Indices.AddRange(indices);
-        sparseVector.Values.AddRange(values);
-
-        var vectors = new Dictionary<string, Vector>
+        try
         {
-            ["dense_vector"] = new() { Dense = denseVector },
-            ["sparse_vector"] = new() { Sparse = sparseVector }
-        };
+            await _vectorService.CreateCollectionAsync(collectionName);
+            return Ok(new { message = $"Collection '{collectionName}' created successfully" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = $"Failed to create collection: {ex.Message}" });
+        }
+    }
 
-        request.Vectors = vectors;
-        await _vectorService.UpsertInsightAsync(insightId, request.Url, request.Content, request.ResourceId, request.Vectors);
-        return Ok();
+    [HttpPost("vectors/resource")]
+    public async Task<IActionResult> UpsertResource([FromBody] ShareVectorRequest request)
+    {
+        try
+        {
+            var resourceId = request.ResourceId ?? Guid.NewGuid().ToString();
+            var denseEmbedding = await _embeddingService.GetDenseEmbeddingAsync(request.Content);
+            var (indices, values) = await _embeddingService.GetSparseEmbeddingAsync(request.Content);
+
+            var denseVector = new DenseVector();
+            denseVector.Data.AddRange(denseEmbedding);
+
+            var sparseVector = new SparseVector();
+            sparseVector.Indices.AddRange(indices);
+            sparseVector.Values.AddRange(values);
+
+            var vectors = new Dictionary<string, Vector>
+            {
+                ["dense_vector"] = new() { Dense = denseVector },
+                ["sparse_vector"] = new() { Sparse = sparseVector }
+            };
+
+            request.Vectors = vectors;
+            await _vectorService.UpsertResourceAsync(resourceId, request.Url, request.Content, request.Vectors);
+            return Ok(new { message = "Resource vector upserted successfully" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = $"Failed to upsert resource vector: {ex.Message}" });
+        }
+    }
+
+    [HttpPost("vectors/insight")]
+    public async Task<IActionResult> UpsertInsight([FromBody] ShareInsightRequest request)
+    {
+        try
+        {
+            var insightId = request.InsightId ?? Guid.NewGuid().ToString();
+            var denseEmbedding = await _embeddingService.GetDenseEmbeddingAsync(request.Content);
+            var (indices, values) = await _embeddingService.GetSparseEmbeddingAsync(request.Content);
+
+            var denseVector = new DenseVector();
+            denseVector.Data.AddRange(denseEmbedding);
+
+            var sparseVector = new SparseVector();
+            sparseVector.Indices.AddRange(indices);
+            sparseVector.Values.AddRange(values);
+
+            var vectors = new Dictionary<string, Vector>
+            {
+                ["dense_vector"] = new() { Dense = denseVector },
+                ["sparse_vector"] = new() { Sparse = sparseVector }
+            };
+
+            request.Vectors = vectors;
+            await _vectorService.UpsertInsightAsync(insightId, request.Url, request.Content, request.ResourceId, request.Vectors);
+            return Ok(new { message = "Insight vector upserted successfully" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = $"Failed to upsert resource vector: {ex.Message}" });
+        }
     }
 
     //todo make sure the return data from service is List<Resource> and List<Insight>
