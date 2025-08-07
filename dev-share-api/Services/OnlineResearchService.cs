@@ -13,12 +13,7 @@ public interface IOnlineResearchService
 public class OnlineResearchService : IOnlineResearchService
 {
     private readonly AzureOpenAIClient _client;
-    private readonly string _deploymentName = "gpt-4o-mini";
-    private static readonly JsonSerializerOptions _jsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        WriteIndented = true
-    };
+    private const string _deploymentName = "gpt-4o-mini";
 
     public OnlineResearchService(AzureOpenAIClient openAIClient)
     {
@@ -28,96 +23,90 @@ public class OnlineResearchService : IOnlineResearchService
     public async Task<IEnumerable<ResourceDto>> PerformOnlineResearchAsync(string query, int topK = 3)
     {
         if (string.IsNullOrWhiteSpace(query))
-        {
             throw new ArgumentException("Query cannot be empty", nameof(query));
-        }
 
-        try
+        var messages = new List<ChatMessage>
         {
-            var response = await GetOpenAIResponseAsync(query, topK);
-            return await ParseResponseToVectorResourceDtos(response);
-        }
-        catch (Exception ex)
-        {
-            throw;
-        }
-    }
+            new SystemChatMessage($@"
+                You are an AI research assistant. Your task is to return an array of up to {topK} concise and factual resources relevant to the user's query.
 
-    private async Task<string> GetOpenAIResponseAsync(string query, int topK)
-    {
-        var prompt = GeneratePrompt(query, topK);
-        ChatCompletion response = await _client.GetChatClient(_deploymentName)
-                    .CompleteChatAsync(prompt);
+                For each resource, provide:
+                - Title: A title for the answer of the summary in less than 15 words.
+                - Content: A concise factual answer or summary.
+                - Url: A direct, relevant web source.
 
-        return response.Content?.FirstOrDefault()?.Text ?? string.Empty;
-    }
-
-    private static async Task<IEnumerable<ResourceDto>> ParseResponseToVectorResourceDtos(string response)
-    {
-        if (string.IsNullOrWhiteSpace(response))
-        {
-            return new[] { CreateFallbackDto(response) };
-        }
-
-        try
-        {
-            // Clean the response by removing Markdown code block and escapes
-            var cleanedResponse = response
-                .Replace("```json", "")
-                .Replace("```", "")
-                .Replace("\\n", "")
-                .Replace("\n", "")
-                .Trim();
-
-            var results = await Task.Run(() =>
-                JsonSerializer.Deserialize<ResourceDto[]>(cleanedResponse, _jsonOptions));
-
-            if (results?.Any() == true)
-            {
-                return results;
-            }
-
-            // Try parsing as single object if array fails
-            var singleResult = await Task.Run(() =>
-                JsonSerializer.Deserialize<ResourceDto>(cleanedResponse, _jsonOptions));
-
-            return singleResult != null
-                ? new[] { singleResult }
-                : new[] { CreateFallbackDto(response) };
-        }
-        catch (JsonException ex)
-        {
-            return new[] { CreateFallbackDto(response) };
-        }
-    }
-
-    private static string GeneratePrompt(string query, int topK)
-    {
-        return @$"
-                You are an AI assistant. Given a user query, return an array of {topK} JSON objects with the following fields suitable for a vector database:
-
+                Always call the `generate_research_results` function with your result in JSON:
                 [
                     {{
-                        ""Content"": ""First concise, factual answer here."",
-                        ""Url"": ""https://relevant-source-1.com""
-                    }},
-                    {{
-                        ""Content"": ""Second concise, factual answer here."",
-                        ""Url"": ""https://relevant-source-2.com""
+                        ""title"": string, 
+                        ""content"": string, 
+                        ""url"": string
                     }}
                 ]
 
-                User query: {query}
+                Guidelines:
+                - No explanations or formatting.
+                - Never return plain text; always structured JSON using the function.
+                - Results must be unique and from reputable sources.
+            "),
+            new UserChatMessage(query)
+        };
 
-                Return exactly {topK} JSON objects in an array. Ensure each answer is unique and relevant.";
+        var tool = CreateGenerateResearchResultsTool(topK);
+
+        return await CallToolAndDeserializeAsync<List<ResourceDto>>(
+            toolFunctionName: "generate_research_results",
+            messages: messages,
+            tool: tool
+        );
     }
 
-    private static ResourceDto CreateFallbackDto(string fallBackContent)
+    private ChatTool CreateGenerateResearchResultsTool(int topK)
     {
-        return new()
+        return ChatTool.CreateFunctionTool(
+            functionName: "generate_research_results",
+            functionDescription: $"Returns up to {topK} concise and factual research results for the given query.",
+            functionParameters: BinaryData.FromObjectAsJson(new
+            {
+                type = "array",
+                items = new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        title = new { type = "string", description = "Title" },
+                        content = new { type = "string", description = "Concise, factual answer or summary." },
+                        url = new { type = "string", description = "Direct relevant web source." }
+                    },
+                    required = new[] { "title", "content", "url" }
+                },
+                minItems = 1,
+                maxItems = topK
+            })
+        );
+    }
+
+    public async Task<T> CallToolAndDeserializeAsync<T>(
+        string toolFunctionName,
+        List<ChatMessage> messages,
+        ChatTool tool)
+    {
+        var client = _client.GetChatClient(deploymentName: _deploymentName);
+        ChatCompletionOptions options = new()
         {
-            Content = fallBackContent,
-            Url = string.Empty
+            Tools = { tool }
         };
+        ChatCompletion response = await client.CompleteChatAsync(messages, options);
+
+        var toolCall = response.ToolCalls.FirstOrDefault(tc => tc.FunctionName == toolFunctionName);
+        if (toolCall == null)
+            throw new InvalidOperationException("No function call response found.");
+
+        var json = toolCall.FunctionArguments.ToString();
+        var result = JsonSerializer.Deserialize<T>(json);
+        if (result == null)
+            throw new InvalidOperationException("Deserialization failed.");
+
+        return result;
     }
 }

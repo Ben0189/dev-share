@@ -19,6 +19,7 @@ public class ExtractController : ControllerBase
     private readonly IOnlineResearchService _onlineResearchService;
     private readonly IServiceScopeFactory _scopeFactory;
     private static readonly ConcurrentDictionary<string, ShareTask> TaskStore = new();
+    private static readonly HttpClient _httpClient = new();
 
     public ExtractController(
         IEmbeddingService embeddingService,
@@ -51,6 +52,13 @@ public class ExtractController : ControllerBase
         }
 
         Console.WriteLine($"Extracting: {url}");
+
+        bool isVideo = await UrlTypeDetector.IsVideoUrlAsync(url, _httpClient);
+
+        if (isVideo)
+        {
+            return BadRequest(new { Type = "Video", Message = "Video URL detected" });
+        }
 
         var taskId = Guid.NewGuid().ToString();
         var task = new ShareTask
