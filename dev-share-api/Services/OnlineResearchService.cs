@@ -14,6 +14,11 @@ public class OnlineResearchService : IOnlineResearchService
 {
     private readonly AzureOpenAIClient _client;
     private const string _deploymentName = "gpt-4o-mini";
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = true
+    };
 
     public OnlineResearchService(AzureOpenAIClient openAIClient)
     {
@@ -36,13 +41,15 @@ public class OnlineResearchService : IOnlineResearchService
                 - Url: A direct, relevant web source.
 
                 Always call the `generate_research_results` function with your result in JSON:
-                [
-                    {{
-                        ""title"": string, 
-                        ""content"": string, 
-                        ""url"": string
-                    }}
-                ]
+                {{
+                    ""results"": [
+                        {{
+                            ""title"": string, 
+                            ""content"": string, 
+                            ""url"": string
+                        }}
+                    ]
+                }}
 
                 Guidelines:
                 - No explanations or formatting.
@@ -54,11 +61,11 @@ public class OnlineResearchService : IOnlineResearchService
 
         var tool = CreateGenerateResearchResultsTool(topK);
 
-        return await CallToolAndDeserializeAsync<List<ResourceDto>>(
+        return await CallToolAndDeserializeAsync<ResourceResultWrapper>(
             toolFunctionName: "generate_research_results",
             messages: messages,
             tool: tool
-        );
+        ).ContinueWith(t => t.Result?.Results ?? new List<ResourceDto>()); ;
     }
 
     private ChatTool CreateGenerateResearchResultsTool(int topK)
@@ -68,20 +75,28 @@ public class OnlineResearchService : IOnlineResearchService
             functionDescription: $"Returns up to {topK} concise and factual research results for the given query.",
             functionParameters: BinaryData.FromObjectAsJson(new
             {
-                type = "array",
-                items = new
+                type = "object",
+                properties = new
                 {
-                    type = "object",
-                    properties = new
+                    results = new
                     {
-                        title = new { type = "string", description = "Title" },
-                        content = new { type = "string", description = "Concise, factual answer or summary." },
-                        url = new { type = "string", description = "Direct relevant web source." }
-                    },
-                    required = new[] { "title", "content", "url" }
+                        type = "array",
+                        items = new
+                        {
+                            type = "object",
+                            properties = new
+                            {
+                                title = new { type = "string", description = "Title" },
+                                content = new { type = "string", description = "Concise, factual answer or summary." },
+                                url = new { type = "string", description = "Direct relevant web source." }
+                            },
+                            required = new[] { "content", "url" }
+                        },
+                        minItems = 1,
+                        maxItems = topK
+                    }
                 },
-                minItems = 1,
-                maxItems = topK
+                required = new[] { "results" }
             })
         );
     }
@@ -102,11 +117,22 @@ public class OnlineResearchService : IOnlineResearchService
         if (toolCall == null)
             throw new InvalidOperationException("No function call response found.");
 
-        var json = toolCall.FunctionArguments.ToString();
-        var result = JsonSerializer.Deserialize<T>(json);
+        var jsonRes = toolCall.FunctionArguments.ToString();
+        var cleanedResponse = jsonRes
+                .Replace("```json", "")
+                .Replace("```", "")
+                .Replace("\\n", "")
+                .Replace("\n", "")
+                .Trim();
+        var result = JsonSerializer.Deserialize<T>(cleanedResponse, _jsonOptions);
         if (result == null)
             throw new InvalidOperationException("Deserialization failed.");
 
         return result;
+    }
+
+    private class ResourceResultWrapper
+    {
+        public List<ResourceDto> Results { get; set; } = new();
     }
 }
