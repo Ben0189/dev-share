@@ -28,7 +28,7 @@ export default function ResourceCard({
     >
       {/* Title and description */}
       <div className="flex-1 px-6 flex flex-col">
-        <div className="flex flex-row justify-between items-center py-2">
+        <div className="flex flex-row justify-between items-center pt-2">
           <h1 className="text-xl font-semibold leading-snug mb-1 text-foreground">
             {resource.title}
           </h1>
@@ -46,7 +46,21 @@ export default function ResourceCard({
             />
           </button>
         </div>
-
+        {/* AI Generated badge */}
+        {resource.isAIGenerated && (
+          <span className="bg-foreground/20 text-primary px-2 py-1 rounded-lg text-xs font-semibold shadow border border-foreground/30 flex flex-wrap items-center gap-1 w-fit">
+            <svg
+              className="w-4 h-4 mr-1"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 20 20"
+            >
+              <path d="M10 2a1 1 0 0 1 1 1v1.07a7.002 7.002 0 0 1 5.93 5.93H18a1 1 0 1 1 0 2h-1.07a7.002 7.002 0 0 1-5.93 5.93V18a1 1 0 1 1-2 0v-1.07a7.002 7.002 0 0 1-5.93-5.93H2a1 1 0 1 1 0-2h1.07a7.002 7.002 0 0 1 5.93-5.93V3a1 1 0 0 1 1-1z" />
+            </svg>
+            Searched with AI
+          </span>
+        )}
         <ReadMoreArea
           className="flex flex-col justify-start" // classes styles of main div (tailwind)
           expandLabel="Read more" // Expand Label
