@@ -3,7 +3,7 @@ import { Card } from './ui/card';
 
 export default function ResourceCardSkeleton() {
   return (
-    <Card className="flex flex-col justify-between min-h-[320px] min-w-0 p-0 rounded-xl border shadow-sm bg-white transition-all duration-300 hover:shadow-md relative animate-pulse">
+    <Card className="flex flex-col justify-between min-h-[320px] min-w-0 p-0 rounded-xl border shadow-sm bg-background transition-all duration-300 hover:shadow-md">
       {/* Top - Avatar and Meta */}
       <div className="flex items-center gap-3 px-6 pt-6 pb-2">
         <Skeleton className="h-8 w-8 rounded-full" />
