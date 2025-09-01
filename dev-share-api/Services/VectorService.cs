@@ -3,13 +3,13 @@ using Microsoft.Extensions.Options;
 using Models;
 using Qdrant.Client;
 using Qdrant.Client.Grpc;
-using System.Text.Json;
 
 namespace Services;
 
 public interface IVectorService
 {
     Task InitializeAsync();
+    Task CreateCollectionAsync(string collectionName);
     Task<UpdateResult> IndexingAsync(string collectionName, string fieldName);
     Task UpdateCollectionAsync(string collectionName);
 
@@ -135,7 +135,7 @@ public class VectorService : IVectorService
         return insightResults.Select(MapToInsightDto).ToList();
     }
 
-    private async Task CreateCollectionAsync(string collectionName)
+    public async Task CreateCollectionAsync(string collectionName)
     {
         try
         {
